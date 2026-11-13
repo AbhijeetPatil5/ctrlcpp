@@ -1,9 +1,9 @@
-# Control Systems Library (csl) — Design Document V4
+# Control Systems Library (ctrlcpp) — Design Document V4
 
 | Field | Value |
 |---|---|
 | Document | Design Document and Project Plan, Version 4.0 |
-| Project | Control Systems Library (`csl`) |
+| Project | Control Systems Library (`ctrlcpp`) |
 | Language standard | C++17 |
 | Dependencies | Eigen 3.4 (linear algebra), Google Test 1.14 (unit testing) |
 | Target platforms | Windows 11 / MSVC 14.44 (primary); Linux / GCC; macOS / Clang |
@@ -47,7 +47,7 @@ Appendix B — References
 
 ### 1.1 Purpose
 
-This document specifies the design of the Control Systems Library (`csl`) and the 70-day implementation plan by which it is built. The library is a C++17 implementation of the core functionality of a control-systems and signal-processing toolbox: system representations and conversions, time- and frequency-domain analysis, classical and state-space controller design, discretization and digital filtering, optimal and predictive control, state estimation, and system identification.
+This document specifies the design of the Control Systems Library (`ctrlcpp`) and the 70-day implementation plan by which it is built. The library is a C++17 implementation of the core functionality of a control-systems and signal-processing toolbox: system representations and conversions, time- and frequency-domain analysis, classical and state-space controller design, discretization and digital filtering, optimal and predictive control, state estimation, and system identification.
 
 The plan serves two purposes simultaneously: it produces a working, tested library, and it is structured so that a developer with no prior C++ experience and introductory control-systems knowledge acquires both subjects in a fixed, dependency-ordered sequence. Each working day introduces one or more C++ concepts and one or more control concepts, and the library component built on that day requires both.
 
@@ -106,7 +106,7 @@ Version 4 retains the curriculum, phase sequence, reference models and day numbe
 - **Corrected algorithms and listings:** sign error in the Hildreth QP update and ignored equality constraints (Day 62); delay-uncertainty weight that did not bound the delay error (Day 60); anti-aliasing experiment that filtered after the sampler (Day 35); discrete impulse-response convention (Day 15); `tf2ss`/`ss2tf` for static gains (Day 14); matched pole–zero test contradicting its convention and scalar use of a matrix `dcGain` (Day 30); phase-crossover detection (Day 18); `std::unique_ptr` to an incomplete `Estimator` in `Simulator` (Days 24, 39); deleted copy operations suppressing moves (Day 42); overload hiding of `DigitalFilter::process` (Day 33); aggregate construction of `LeadDesign` (Day 27); discrete H2 norm feedthrough term (Day 40); H∞ example violating the regularity assumptions (Day 66); Eigen target not exported with the package (Days 6, 67).
 - **Corrected verification values and claims:** V15.1, V29.1, V32.2, V44.4, V52.3, V57.1, V64.1; V54.4–V54.5 reclassified as experiments; ARX bias under output noise stated (Day 56).
 - **Corrected citations:** [R8] chapter references aligned with the second edition; [R9] LQR reference; [R14] linear-quadratic section; [R23] general H∞ chapter; [R49] replaced by the C++ Core Guidelines rules; [R5] pinned to a documentation version; [R51]–[R53] added.
-- **Structure:** abstract interfaces moved to `include/csl/interfaces/` so that the dependency graph (Figure 4-1) is acyclic and accurate; `core` split into single-purpose headers; semantic contracts (Table 4-4) and a numerical policy (Section 4.6) added; a core track and branches defined (Section 6.4, Figure 6-1); multi-session work packages identified (Table 6-3); minimal CI introduced on Day 10; testing policy T8 distinguishes correctness, numerical quality and experiments.
+- **Structure:** abstract interfaces moved to `include/ctrlcpp/interfaces/` so that the dependency graph (Figure 4-1) is acyclic and accurate; `core` split into single-purpose headers; semantic contracts (Table 4-4) and a numerical policy (Section 4.6) added; a core track and branches defined (Section 6.4, Figure 6-1); multi-session work packages identified (Table 6-3); minimal CI introduced on Day 10; testing policy T8 distinguishes correctness, numerical quality and experiments.
 - **Reading:** primary and supporting roles assigned to each source (Appendix B.1); edition and version notes added.
 
 Review recommendations not adopted, with reasons: renaming or merging modules beyond the `interfaces/` split (the module boundaries of Table 4-1 are retained; churn without benefit); replacing C++ Primer or Oppenheim–Schafer as primary texts (supporting alternatives are listed instead); re-planning the syllabus (the review itself judged the sequence sound).
@@ -147,12 +147,12 @@ controlSystemCPPLibrary/
 ├── .gitignore                            Day 1
 ├── .clang-format                         Day 69
 ├── .github/workflows/ci.yml              Day 10  minimal build-and-test workflow; extended Day 69
-├── cmake/cslConfig.cmake.in              Day 67
+├── cmake/ctrlcppConfig.cmake.in              Day 67
 ├── docs/                                 design documents, tutorials (Day 68), retrospective (Day 70)
 ├── sandbox/                              Days 1–3 programs; phase review notes
 ├── scripts/test_install.ps1 | .sh        Day 67
-├── include/csl/
-│   ├── csl.hpp                           Day 22  umbrella header
+├── include/ctrlcpp/
+│   ├── ctrlcpp.hpp                           Day 22  umbrella header
 │   ├── core/
 │   │   ├── Types.hpp                     Day 6   scalar, vector, matrix, complex aliases; constants
 │   │   ├── Exceptions.hpp                Day 8
@@ -173,9 +173,9 @@ controlSystemCPPLibrary/
 │   │   ├── Interconnect.hpp              Day 19  series, parallel, feedback, gang of four
 │   │   └── NonlinearSystem.hpp           Day 47
 │   ├── interfaces/                       abstract bases; depend only on core and systems
-│   │   ├── Controller.hpp                Day 23  csl::control::Controller
-│   │   ├── DigitalFilter.hpp             Day 33  csl::dsp::DigitalFilter
-│   │   └── Estimator.hpp                 Day 39  csl::estimation::Estimator
+│   │   ├── Controller.hpp                Day 23  ctrlcpp::control::Controller
+│   │   ├── DigitalFilter.hpp             Day 33  ctrlcpp::dsp::DigitalFilter
+│   │   └── Estimator.hpp                 Day 39  ctrlcpp::estimation::Estimator
 │   ├── simulation/
 │   │   ├── SimResult.hpp                 Day 7
 │   │   ├── ODESolver.hpp                 Day 4   scalar Euler; vector Euler/RK4/integrate (Day 7)
@@ -222,7 +222,7 @@ controlSystemCPPLibrary/
 │       ├── CSV.hpp                       Day 5
 │       ├── Figure.hpp                    Day 15
 │       └── Plots.hpp                     Day 15  plotStep; plotBode/Nyquist/RootLocus (Days 17–21); plotSpectrum (Day 32)
-├── src/                                  one .cpp per header requiring one, mirroring include/csl
+├── src/                                  one .cpp per header requiring one, mirroring include/ctrlcpp
 ├── tests/
 │   ├── CMakeLists.txt                    Day 10
 │   ├── <module>/test_<Header>.cpp        one per header
@@ -269,15 +269,15 @@ Debugging: in VS Code, set the CMake Tools debug target to a test or example exe
 |---|---|
 | File extensions | Headers `.hpp`, sources `.cpp`; one header per class or function group |
 | Include guard | `#pragma once` as the first line of every header |
-| Include paths | From the include root: `#include "csl/systems/StateSpace.hpp"` |
-| Namespaces | `csl::<module>` (lower case); no `using namespace` in headers |
+| Include paths | From the include root: `#include "ctrlcpp/systems/StateSpace.hpp"` |
+| Namespaces | `ctrlcpp::<module>` (lower case); no `using namespace` in headers |
 | Type names | `PascalCase` (`TransferFunction`) |
 | Functions and variables | `camelCase` (`frequencyResponse`, `dcGain`) |
 | Private data members | trailing underscore (`A_`, `num_`) |
 | Constants | `UPPER_CASE` for namespace-scope constants; `constexpr` locals otherwise |
 | Parameters | Eigen and class objects passed by `const&`; results returned by value |
 | Prohibited | raw `new`/`delete`; C-style casts; global mutable state; `float` |
-| Error handling | preconditions throw a `csl::Error` subtype (Listing 4-6); legitimately absent results use `std::optional` |
+| Error handling | preconditions throw a `ctrlcpp::Error` subtype (Listing 4-6); legitimately absent results use `std::optional` |
 | Tests | `tests/<module>/test_<Header>.cpp`; `TEST(HeaderName, Property)`; floating-point comparison with `EXPECT_NEAR` |
 | Commits | one per day: `Day NN: <summary>` |
 | Formatting | `.clang-format` (Day 69); 4-space indentation; 110-column limit |
@@ -303,23 +303,23 @@ One commit per completed work package, after all exit criteria are met; multi-se
 
 ### 4.1 Modules
 
-The library comprises eleven modules (Table 4-1), each a sub-namespace of `csl` and a directory under `include/csl/` (Figure 3-1).
+The library comprises eleven modules (Table 4-1), each a sub-namespace of `ctrlcpp` and a directory under `include/ctrlcpp/` (Figure 3-1).
 
 **Table 4-1 — Modules**
 
 | Module | Namespace | Responsibility | Introduced |
 |---|---|---|---|
-| core | `csl` | Type aliases, constants, exceptions, polynomials, control-specific linear algebra (Lyapunov, Riccati, Gramians), numerical methods (root finding, Jacobians, QP) | Phase 1 |
-| systems | `csl::systems` | `LTISystem` base, `StateSpace`, `TransferFunction`, conversions, discretization, interconnections, `NonlinearSystem` | Phase 1 |
-| interfaces | `csl::control`, `csl::estimation`, `csl::dsp` | Abstract base classes `Controller`, `Estimator`, `DigitalFilter` in `include/csl/interfaces/`; the classes keep their module namespaces; the directory depends only on `core` and `systems` so that `simulation` can own controllers and estimators without a cyclic dependency | Phase 4 |
-| simulation | `csl::simulation` | ODE integrators, `SimResult`, time responses and specifications, closed-loop `Simulator`, Monte Carlo | Phase 1 |
-| analysis | `csl::analysis` | Frequency response, Bode, Nyquist, margins, sensitivity, root locus, Routh–Hurwitz, Lyapunov stability, norms, robustness | Phase 3 |
-| control | `csl::control` | `Controller` base, PID, tuning, lead/lag, transfer-function controller, state feedback, LQR, dynamic programming, LQG, MPC, iLQR, H∞ | Phase 4 |
-| estimation | `csl::estimation` | `Estimator` base, Luenberger observer, Kalman, extended and unscented Kalman filters | Phase 6 |
-| dsp | `csl::dsp` | FFT, windows, spectral estimation, digital filter structures and design | Phase 5 |
-| sysid | `csl::sysid` | ARX, RLS, frequency-domain identification, ERA, validation | Phase 9 |
-| signals | `csl::signals` | Deterministic test signals, white noise, PRBS | Phase 2 |
-| plot | `csl::plot` | CSV I/O, SVG/HTML figures, control-specific plot helpers | Phase 1 |
+| core | `ctrlcpp` | Type aliases, constants, exceptions, polynomials, control-specific linear algebra (Lyapunov, Riccati, Gramians), numerical methods (root finding, Jacobians, QP) | Phase 1 |
+| systems | `ctrlcpp::systems` | `LTISystem` base, `StateSpace`, `TransferFunction`, conversions, discretization, interconnections, `NonlinearSystem` | Phase 1 |
+| interfaces | `ctrlcpp::control`, `ctrlcpp::estimation`, `ctrlcpp::dsp` | Abstract base classes `Controller`, `Estimator`, `DigitalFilter` in `include/ctrlcpp/interfaces/`; the classes keep their module namespaces; the directory depends only on `core` and `systems` so that `simulation` can own controllers and estimators without a cyclic dependency | Phase 4 |
+| simulation | `ctrlcpp::simulation` | ODE integrators, `SimResult`, time responses and specifications, closed-loop `Simulator`, Monte Carlo | Phase 1 |
+| analysis | `ctrlcpp::analysis` | Frequency response, Bode, Nyquist, margins, sensitivity, root locus, Routh–Hurwitz, Lyapunov stability, norms, robustness | Phase 3 |
+| control | `ctrlcpp::control` | `Controller` base, PID, tuning, lead/lag, transfer-function controller, state feedback, LQR, dynamic programming, LQG, MPC, iLQR, H∞ | Phase 4 |
+| estimation | `ctrlcpp::estimation` | `Estimator` base, Luenberger observer, Kalman, extended and unscented Kalman filters | Phase 6 |
+| dsp | `ctrlcpp::dsp` | FFT, windows, spectral estimation, digital filter structures and design | Phase 5 |
+| sysid | `ctrlcpp::sysid` | ARX, RLS, frequency-domain identification, ERA, validation | Phase 9 |
+| signals | `ctrlcpp::signals` | Deterministic test signals, white noise, PRBS | Phase 2 |
+| plot | `ctrlcpp::plot` | CSV I/O, SVG/HTML figures, control-specific plot helpers | Phase 1 |
 | examples | — | Reference models (`plants.hpp`) and ten example programs | Phase 1 |
 
 ### 4.2 Dependencies
@@ -369,7 +369,7 @@ The type contract is the set of types and conventions shared by all modules. It 
 
 #### 4.3.1 Scalar and Linear-Algebra Types
 
-**Listing 4-1 — `include/csl/core/Types.hpp` (Day 6)**
+**Listing 4-1 — `include/ctrlcpp/core/Types.hpp` (Day 6)**
 
 ```cpp
 #pragma once
@@ -377,7 +377,7 @@ The type contract is the set of types and conventions shared by all modules. It 
 #include <complex>
 #include <limits>
 
-namespace csl {
+namespace ctrlcpp {
 
 using Real          = double;
 using Index         = Eigen::Index;
@@ -393,7 +393,7 @@ inline constexpr Real TWO_PI = 2.0 * PI;
 inline constexpr Real EPS    = std::numeric_limits<Real>::epsilon();
 inline constexpr Real INF    = std::numeric_limits<Real>::infinity();
 
-} // namespace csl
+} // namespace ctrlcpp
 ```
 
 Conventions:
@@ -407,7 +407,7 @@ Conventions:
 **Listing 4-2 — `LTISystem` interface (Day 13)**
 
 ```cpp
-namespace csl::systems {
+namespace ctrlcpp::systems {
 
 class LTISystem {
 public:
@@ -429,7 +429,7 @@ public:
 class StateSpace       : public LTISystem { /* A, B, C, D, Ts — Day 8 */ };
 class TransferFunction : public LTISystem { /* num, den, Ts — Day 12; SISO */ };
 
-} // namespace csl::systems
+} // namespace ctrlcpp::systems
 ```
 
 Conventions:
@@ -443,7 +443,7 @@ Conventions:
 **Listing 4-3 — Result types**
 
 ```cpp
-namespace csl::simulation {
+namespace ctrlcpp::simulation {
 struct SimResult {           // Day 7; produced by integrate, step, impulse, lsim, Simulator::run
     Vector t;                // N
     Matrix x;                // N x n states
@@ -452,7 +452,7 @@ struct SimResult {           // Day 7; produced by integrate, step, impulse, lsi
     Index samples() const { return t.size(); }
 };
 }
-namespace csl::analysis {
+namespace ctrlcpp::analysis {
 struct FrequencyResponse {   // Day 17; produced by frequencyResponse(sys, w) and by dsp::etfe(u, y, fs)
     Vector        w;         // rad/s, ascending
     ComplexVector H;         // H(jw) or H(e^{jwTs}), SISO
@@ -468,7 +468,7 @@ Convention C9: all time-domain results are `SimResult`; all SISO frequency-domai
 **Listing 4-4 — `Controller` interface (Day 23)**
 
 ```cpp
-namespace csl::control {
+namespace ctrlcpp::control {
 enum class MeasurementKind { Output, State };   // what `measurement` carries: the plant output y, or the state x (true or estimated)
 class Controller {
 public:
@@ -487,7 +487,7 @@ public:
 **Listing 4-5 — `Estimator` and `DigitalFilter` interfaces (Days 39, 33)**
 
 ```cpp
-namespace csl::estimation {
+namespace ctrlcpp::estimation {
 class Estimator {
 public:
     virtual ~Estimator() = default;
@@ -499,7 +499,7 @@ public:
     virtual Real   Ts() const = 0;             // sample time of the discrete model; must equal the controller's
 };
 }
-namespace csl::dsp {
+namespace ctrlcpp::dsp {
 class DigitalFilter {
 public:
     virtual ~DigitalFilter() = default;
@@ -520,12 +520,12 @@ Conventions:
 
 #### 4.3.5 Errors
 
-**Listing 4-6 — `include/csl/core/Exceptions.hpp` (Day 8)**
+**Listing 4-6 — `include/ctrlcpp/core/Exceptions.hpp` (Day 8)**
 
 ```cpp
 #pragma once
 #include <stdexcept>
-namespace csl {
+namespace ctrlcpp {
 class Error             : public std::runtime_error { using std::runtime_error::runtime_error; };
 class DimensionMismatch : public Error { using Error::Error; };
 class InvalidArgument   : public Error { using Error::Error; };
@@ -708,7 +708,7 @@ The plan comprises 70 work packages ("days") in eleven phases (Table 6-1). A pac
 |---|---|---|---|---|
 | 1 Foundations | 1–10 | Toolchain, compile/link, functions, headers, CMake, `std::vector`, references, Eigen, lambdas, classes, exceptions, `std::complex`, Google Test, debugger | Dynamic systems, first- and second-order responses, Euler and RK4, state-space form, poles and stability | `StateSpace`, integrators, tests, `ex01` |
 | 2 Representations | 11–16 | Operator overloading, friends, factories, inheritance, Eigen blocks, file I/O, string streams, iterators, algorithms | Laplace domain, polynomials, transfer functions, realizations, step/impulse response, specifications | `Polynomial`, `TransferFunction`, `LTISystem`, conversions, plotter, `TimeResponse` |
-| 3 Frequency domain | 17–22 | `std::optional`, overload sets, operators, sorting predicates, header organisation | Frequency response, Bode, Nyquist, margins, interconnections, sensitivity, minimum phase, delay, root locus, Routh–Hurwitz | `analysis` module, `csl.hpp`, `ex02` |
+| 3 Frequency domain | 17–22 | `std::optional`, overload sets, operators, sorting predicates, header organisation | Frequency response, Bode, Nyquist, margins, interconnections, sensitivity, minimum phase, delay, root locus, Routh–Hurwitz | `analysis` module, `ctrlcpp.hpp`, `ex02` |
 | 4 Classical design | 23–28 | Abstract bases, configs, smart pointers, RAII, memory model, tuples, root finding | PID, sampled-data simulation, anti-windup, tuning, lead/lag, loop shaping | `Controller`, `PID`, `Simulator`, `Tuning`, `LeadLag`, `ex03` |
 | 5 Discrete time and DSP | 29–36 | `enum class`, matrix functions, bitwise arithmetic, in-place algorithms, templates | Sampling, discretization, z-domain, FFT, spectral estimation, filters, digital control | `c2d`/`d2c`, `FFT`, `Spectral`, `DigitalFilter`, `FilterDesign`, `ex04` |
 | 6 State-space design | 37–43 | Numerical rank, Kronecker products, `Eigen::Map`, Cholesky, Rule of Zero, move semantics | Controllability, observability, pole placement, observers, Lyapunov equations, Gramians, integral action | `LinearAlgebra`, `StateFeedback`, `Estimator`, observer, `ex05` |
@@ -762,7 +762,7 @@ Table 6-2 is the project tracker. Packages that take more than one session are l
 | 19 | Interconnections, sensitivity | `systems/Interconnect` | ☐ |
 | 20 | Minimum phase, delay, Padé | `pade`, `isMinimumPhase` | ☐ |
 | 21 | Root locus | `analysis/RootLocus` | ☐ |
-| 22 | Routh–Hurwitz, umbrella header, review | `analysis/Stability`, `csl.hpp`, `ex02` | ☐ |
+| 22 | Routh–Hurwitz, umbrella header, review | `analysis/Stability`, `ctrlcpp.hpp`, `ex02` | ☐ |
 | **Phase 3** | Frequency domain complete | tag `phase-3` | ☐ |
 | 23 | `Controller` base, PID | `control/Controller`, `control/PID` | ☐ |
 | 24 | Memory model, smart pointers, `Simulator` | `simulation/Simulator` | ☐ |
@@ -1073,7 +1073,7 @@ link euler.obj main.obj /OUT:day03.exe
 
 **Objectives.** C++: CMake targets, `add_library`/`add_executable`, `target_include_directories`, `target_link_libraries` and the `PUBLIC`/`PRIVATE`/`INTERFACE` scopes, out-of-source builds, build types, generator expressions. Control: the mass–spring–damper E2 (Eq. 5-2) and the state vector.
 
-**Background.** CMake generates build files (for Ninja, Visual Studio, Make) from `CMakeLists.txt`. A *target* is an executable or library carrying usage requirements (include directories, compile features, dependencies). `target_link_libraries(app PRIVATE csl)` links `csl` into `app` and propagates `csl`'s `PUBLIC` requirements. A static library is an archive of object files; linking against it is equivalent to linking the object files directly. `CMAKE_BUILD_TYPE` selects `Debug` (no optimisation, symbols) or `Release` (`/O2`).
+**Background.** CMake generates build files (for Ninja, Visual Studio, Make) from `CMakeLists.txt`. A *target* is an executable or library carrying usage requirements (include directories, compile features, dependencies). `target_link_libraries(app PRIVATE ctrlcpp)` links `ctrlcpp` into `app` and propagates `ctrlcpp`'s `PUBLIC` requirements. A static library is an archive of object files; linking against it is equivalent to linking the object files directly. `CMAKE_BUILD_TYPE` selects `Debug` (no optimisation, symbols) or `Release` (`/O2`).
 
 E2 is second order; with state `x₁ = x`, `x₂ = ẋ`:
 
@@ -1089,14 +1089,14 @@ Both derivatives are evaluated from the current state before either state is upd
 |---|---|
 | `CMakeLists.txt` | Create (Listing 7-4) |
 | `examples/CMakeLists.txt` | Create (Listing 7-5) |
-| `include/csl/simulation/ODESolver.hpp`, `src/simulation/ODESolver.cpp` | Create scalar Euler step (Listing 7-6); replaced on Day 7 |
+| `include/ctrlcpp/simulation/ODESolver.hpp`, `src/simulation/ODESolver.cpp` | Create scalar Euler step (Listing 7-6); replaced on Day 7 |
 | `examples/ex01_first_order_sim.cpp` | Create (Listing 7-7) |
 
 **Listing 7-4 — Root `CMakeLists.txt` (Day 4 state)**
 
 ```cmake
 cmake_minimum_required(VERSION 3.20)
-project(csl VERSION 2.0.0 LANGUAGES CXX)
+project(ctrlcpp VERSION 2.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -1110,15 +1110,15 @@ else()
     add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-add_library(csl STATIC src/simulation/ODESolver.cpp)
-add_library(csl::csl ALIAS csl)
-target_include_directories(csl PUBLIC
+add_library(ctrlcpp STATIC src/simulation/ODESolver.cpp)
+add_library(ctrlcpp::ctrlcpp ALIAS ctrlcpp)
+target_include_directories(ctrlcpp PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>)
-target_compile_features(csl PUBLIC cxx_std_17)
+target_compile_features(ctrlcpp PUBLIC cxx_std_17)
 
-option(CSL_BUILD_EXAMPLES "Build example programs" ON)
-if(CSL_BUILD_EXAMPLES)
+option(CTRLCPP_BUILD_EXAMPLES "Build example programs" ON)
+if(CTRLCPP_BUILD_EXAMPLES)
     add_subdirectory(examples)
 endif()
 ```
@@ -1127,20 +1127,20 @@ endif()
 
 ```cmake
 add_executable(ex01_first_order_sim ex01_first_order_sim.cpp)
-target_link_libraries(ex01_first_order_sim PRIVATE csl::csl)
+target_link_libraries(ex01_first_order_sim PRIVATE ctrlcpp::ctrlcpp)
 ```
 
 **Listing 7-6 — Scalar Euler step (temporary)**
 
 ```cpp
-// include/csl/simulation/ODESolver.hpp
+// include/ctrlcpp/simulation/ODESolver.hpp
 #pragma once
-namespace csl::simulation {
+namespace ctrlcpp::simulation {
 double eulerStepScalar(double y, double dydt, double dt);
 }
 // src/simulation/ODESolver.cpp
-#include "csl/simulation/ODESolver.hpp"
-namespace csl::simulation {
+#include "ctrlcpp/simulation/ODESolver.hpp"
+namespace ctrlcpp::simulation {
 double eulerStepScalar(double y, double dydt, double dt) { return y + dt * dydt; }
 }
 ```
@@ -1150,7 +1150,7 @@ double eulerStepScalar(double y, double dydt, double dt) { return y + dt * dydt;
 ```cpp
 #include <iomanip>
 #include <iostream>
-#include "csl/simulation/ODESolver.hpp"
+#include "ctrlcpp/simulation/ODESolver.hpp"
 
 int main() {
     const double m = 1.0, c = 0.5, k = 4.0, F = 1.0;   // E2, unit step force
@@ -1161,8 +1161,8 @@ int main() {
         std::cout << t << "," << x1 << "," << x2 << "\n";
         const double dx1 = x2;                              // Eq. (7-3), from the current state
         const double dx2 = (F - c * x2 - k * x1) / m;
-        x1 = csl::simulation::eulerStepScalar(x1, dx1, dt);
-        x2 = csl::simulation::eulerStepScalar(x2, dx2, dt);
+        x1 = ctrlcpp::simulation::eulerStepScalar(x1, dx1, dt);
+        x2 = ctrlcpp::simulation::eulerStepScalar(x2, dx2, dt);
     }
     return 0;
 }
@@ -1198,27 +1198,27 @@ For `ẍ + 2ζω_n ẋ + ω_n² x = ω_n² u`: `ζ < 1` oscillates at `ω_d = ω
 
 | File | Action |
 |---|---|
-| `include/csl/plot/CSV.hpp`, `src/plot/CSV.cpp` | Create (Listing 7-8); add the source to `add_library` |
+| `include/ctrlcpp/plot/CSV.hpp`, `src/plot/CSV.cpp` | Create (Listing 7-8); add the source to `add_library` |
 | `examples/ex01_first_order_sim.cpp` | Rewrite: simulate E2 for `ζ ∈ {0.125, 0.5, 1, 2}` into `std::vector<double>` columns; write `msd_zeta_sweep.csv`; print peak and overshoot per `ζ` |
 
 **Listing 7-8 — `writeCSV` (vector overload)**
 
 ```cpp
-// include/csl/plot/CSV.hpp
+// include/ctrlcpp/plot/CSV.hpp
 #pragma once
 #include <string>
 #include <vector>
-namespace csl::plot {
+namespace ctrlcpp::plot {
 void writeCSV(const std::string& path, const std::vector<std::string>& headers,
               const std::vector<std::vector<double>>& columns);
 }
 
 // src/plot/CSV.cpp
-#include "csl/plot/CSV.hpp"
+#include "ctrlcpp/plot/CSV.hpp"
 #include <fstream>
 #include <iomanip>
 #include <stdexcept>
-namespace csl::plot {
+namespace ctrlcpp::plot {
 void writeCSV(const std::string& path, const std::vector<std::string>& headers,
               const std::vector<std::vector<double>>& columns) {
     if (headers.size() != columns.size()) throw std::runtime_error("writeCSV: headers/columns count mismatch");
@@ -1243,7 +1243,7 @@ void writeCSV(const std::string& path, const std::vector<std::string>& headers,
 | V5.2 | `msd_zeta_sweep.csv` opens in a spreadsheet; four curves have the expected shapes | — |
 
 **Exit criteria.**
-- [ ] `writeCSV` is part of `csl`; V5.1–V5.2 observed
+- [ ] `writeCSV` is part of `ctrlcpp`; V5.1–V5.2 observed
 - [ ] The parameter kinds `std::vector<double>&` (output) and `const std::vector<double>&` (input) are used correctly
 - [ ] Commit
 
@@ -1269,9 +1269,9 @@ A namespace is a named scope; `using Real = double;` introduces an alias. `inlin
 
 | File | Action |
 |---|---|
-| `CMakeLists.txt` | Add Listing 7-9 before `add_library`; add `target_link_libraries(csl PUBLIC Eigen3::Eigen)` after it |
-| `include/csl/core/Types.hpp` | Create (Listing 4-1) |
-| `include/csl/plot/CSV.hpp`, `src/plot/CSV.cpp` | Add overload `writeCSV(path, headers, const Vector& t, const Matrix& data)` writing `t` as the first column and `data` column-wise (rows must equal `t.size()`) |
+| `CMakeLists.txt` | Add Listing 7-9 before `add_library`; add `target_link_libraries(ctrlcpp PUBLIC Eigen3::Eigen)` after it |
+| `include/ctrlcpp/core/Types.hpp` | Create (Listing 4-1) |
+| `include/ctrlcpp/plot/CSV.hpp`, `src/plot/CSV.cpp` | Add overload `writeCSV(path, headers, const Vector& t, const Matrix& data)` writing `t` as the first column and `data` column-wise (rows must equal `t.size()`) |
 | `examples/plants.hpp` | Create (Listing 7-10) |
 | `examples/ex01_first_order_sim.cpp` | Rewrite: Euler on `x ← x + Δt(Ax + Bu)` for E2 with Eigen; write `msd_eigen.csv` |
 
@@ -1295,40 +1295,40 @@ target_include_directories(eigen INTERFACE
 
 ```cpp
 #pragma once
-#include "csl/core/Types.hpp"
+#include "ctrlcpp/core/Types.hpp"
 namespace plants {
-struct ABCD { csl::Matrix A, B, C, D; };
+struct ABCD { ctrlcpp::Matrix A, B, C, D; };
 
 inline ABCD thermal(double tau = 2.0, double K = 3.0) {
     ABCD s;
-    s.A = csl::Matrix(1, 1); s.A << -1.0 / tau;
-    s.B = csl::Matrix(1, 1); s.B << K / tau;
-    s.C = csl::Matrix(1, 1); s.C << 1.0;
-    s.D = csl::Matrix::Zero(1, 1);
+    s.A = ctrlcpp::Matrix(1, 1); s.A << -1.0 / tau;
+    s.B = ctrlcpp::Matrix(1, 1); s.B << K / tau;
+    s.C = ctrlcpp::Matrix(1, 1); s.C << 1.0;
+    s.D = ctrlcpp::Matrix::Zero(1, 1);
     return s;
 }
 inline ABCD massSpringDamper(double m = 1.0, double c = 0.5, double k = 4.0) {
     ABCD s;
-    s.A = csl::Matrix(2, 2); s.A << 0.0, 1.0, -k / m, -c / m;
-    s.B = csl::Matrix(2, 1); s.B << 0.0, 1.0 / m;
-    s.C = csl::Matrix(1, 2); s.C << 1.0, 0.0;
-    s.D = csl::Matrix::Zero(1, 1);
+    s.A = ctrlcpp::Matrix(2, 2); s.A << 0.0, 1.0, -k / m, -c / m;
+    s.B = ctrlcpp::Matrix(2, 1); s.B << 0.0, 1.0 / m;
+    s.C = ctrlcpp::Matrix(1, 2); s.C << 1.0, 0.0;
+    s.D = ctrlcpp::Matrix::Zero(1, 1);
     return s;
 }
 inline ABCD dcMotor(double R = 1.0, double L = 0.5, double J = 0.01, double b = 0.1, double Kt = 0.01, double Kb = 0.01) {
     ABCD s;
-    s.A = csl::Matrix(2, 2); s.A << -R / L, -Kb / L, Kt / J, -b / J;
-    s.B = csl::Matrix(2, 1); s.B << 1.0 / L, 0.0;
-    s.C = csl::Matrix(1, 2); s.C << 0.0, 1.0;
-    s.D = csl::Matrix::Zero(1, 1);
+    s.A = ctrlcpp::Matrix(2, 2); s.A << -R / L, -Kb / L, Kt / J, -b / J;
+    s.B = ctrlcpp::Matrix(2, 1); s.B << 1.0 / L, 0.0;
+    s.C = ctrlcpp::Matrix(1, 2); s.C << 0.0, 1.0;
+    s.D = ctrlcpp::Matrix::Zero(1, 1);
     return s;
 }
 inline ABCD doubleIntegrator() {
     ABCD s;
-    s.A = csl::Matrix(2, 2); s.A << 0.0, 1.0, 0.0, 0.0;
-    s.B = csl::Matrix(2, 1); s.B << 0.0, 1.0;
-    s.C = csl::Matrix(1, 2); s.C << 1.0, 0.0;
-    s.D = csl::Matrix::Zero(1, 1);
+    s.A = ctrlcpp::Matrix(2, 2); s.A << 0.0, 1.0, 0.0, 0.0;
+    s.B = ctrlcpp::Matrix(2, 1); s.B << 0.0, 1.0;
+    s.C = ctrlcpp::Matrix(1, 2); s.C << 1.0, 0.0;
+    s.D = ctrlcpp::Matrix::Zero(1, 1);
     return s;
 }
 }
@@ -1371,19 +1371,19 @@ A lambda `[&](Real t, const Vector& x) { … }` is an anonymous function capturi
 
 | File | Action |
 |---|---|
-| `include/csl/simulation/SimResult.hpp` | Create (Listing 4-3, `SimResult`) |
-| `include/csl/simulation/ODESolver.hpp`, `src/simulation/ODESolver.cpp` | Replace with Listing 7-11 |
+| `include/ctrlcpp/simulation/SimResult.hpp` | Create (Listing 4-3, `SimResult`) |
+| `include/ctrlcpp/simulation/ODESolver.hpp`, `src/simulation/ODESolver.cpp` | Replace with Listing 7-11 |
 | `examples/ex01_first_order_sim.cpp` | Rewrite: integrate E1 with Euler and RK4 for `Δt ∈ {0.5, 0.1, 0.01}`; print errors at `t = 10` |
 
 **Listing 7-11 — Generic integrator**
 
 ```cpp
-// include/csl/simulation/ODESolver.hpp
+// include/ctrlcpp/simulation/ODESolver.hpp
 #pragma once
 #include <functional>
-#include "csl/core/Types.hpp"
-#include "csl/simulation/SimResult.hpp"
-namespace csl::simulation {
+#include "ctrlcpp/core/Types.hpp"
+#include "ctrlcpp/simulation/SimResult.hpp"
+namespace ctrlcpp::simulation {
 using Dynamics = std::function<Vector(Real t, const Vector& x)>;
 enum class Integrator { Euler, RK4 };
 Vector eulerStep(const Dynamics& f, Real t, const Vector& x, Real dt);
@@ -1393,10 +1393,10 @@ SimResult integrate(const Dynamics& f, const Vector& x0, Real t0, Real tf, Real 
 }
 
 // src/simulation/ODESolver.cpp
-#include "csl/simulation/ODESolver.hpp"
+#include "ctrlcpp/simulation/ODESolver.hpp"
 #include <cmath>
 #include <stdexcept>
-namespace csl::simulation {
+namespace ctrlcpp::simulation {
 Vector eulerStep(const Dynamics& f, Real t, const Vector& x, Real dt) { return x + dt * f(t, x); }
 
 Vector rk4Step(const Dynamics& f, Real t, const Vector& x, Real dt) {
@@ -1461,19 +1461,19 @@ G(0) = D − C A⁻¹ B           (continuous);     G(1) = D + C (I − A)⁻¹ 
 
 | File | Action |
 |---|---|
-| `include/csl/core/Exceptions.hpp` | Create (Listing 4-6) |
-| `include/csl/systems/StateSpace.hpp`, `src/systems/StateSpace.cpp` | Create (Listing 7-12) |
-| `examples/plants.hpp` | Return `csl::systems::StateSpace` from each factory; delete `ABCD` |
+| `include/ctrlcpp/core/Exceptions.hpp` | Create (Listing 4-6) |
+| `include/ctrlcpp/systems/StateSpace.hpp`, `src/systems/StateSpace.cpp` | Create (Listing 7-12) |
+| `examples/plants.hpp` | Return `ctrlcpp::systems::StateSpace` from each factory; delete `ABCD` |
 | `src/plot/CSV.cpp` | Replace `std::runtime_error` with `InvalidArgument` |
 
 **Listing 7-12 — `StateSpace` (Day 8 state; derives from `LTISystem` on Day 13)**
 
 ```cpp
-// include/csl/systems/StateSpace.hpp
+// include/ctrlcpp/systems/StateSpace.hpp
 #pragma once
 #include <vector>
-#include "csl/core/Types.hpp"
-namespace csl::systems {
+#include "ctrlcpp/core/Types.hpp"
+namespace ctrlcpp::systems {
 class StateSpace {
 public:
     StateSpace(Matrix A, Matrix B, Matrix C, Matrix D, Real Ts = 0.0);
@@ -1497,11 +1497,11 @@ private:
 }
 
 // src/systems/StateSpace.cpp
-#include "csl/systems/StateSpace.hpp"
+#include "ctrlcpp/systems/StateSpace.hpp"
 #include <string>
 #include <utility>
-#include "csl/core/Exceptions.hpp"
-namespace csl::systems {
+#include "ctrlcpp/core/Exceptions.hpp"
+namespace ctrlcpp::systems {
 namespace {
 std::string shape(const Matrix& M) { return std::to_string(M.rows()) + "x" + std::to_string(M.cols()); }
 }
@@ -1611,8 +1611,8 @@ bool StateSpace::isStable() const {
 
 ```cmake
 # root CMakeLists.txt (append)
-option(CSL_BUILD_TESTS "Build unit tests" ON)
-if(CSL_BUILD_TESTS)
+option(CTRLCPP_BUILD_TESTS "Build unit tests" ON)
+if(CTRLCPP_BUILD_TESTS)
     enable_testing()
     add_subdirectory(tests)
 endif()
@@ -1622,16 +1622,16 @@ include(FetchContent)
 FetchContent_Declare(googletest
     URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
     DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
-set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)       # MSVC: match the C runtime of csl
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)       # MSVC: match the C runtime of ctrlcpp
 FetchContent_MakeAvailable(googletest)
 include(GoogleTest)
-add_executable(csl_tests
+add_executable(ctrlcpp_tests
     simulation/test_ODESolver.cpp
     systems/test_StateSpace.cpp
     plot/test_CSV.cpp)
-target_link_libraries(csl_tests PRIVATE csl::csl GTest::gtest_main)
-target_include_directories(csl_tests PRIVATE ${CMAKE_SOURCE_DIR}/examples)   # plants.hpp
-gtest_discover_tests(csl_tests)
+target_link_libraries(ctrlcpp_tests PRIVATE ctrlcpp::ctrlcpp GTest::gtest_main)
+target_include_directories(ctrlcpp_tests PRIVATE ${CMAKE_SOURCE_DIR}/examples)   # plants.hpp
+gtest_discover_tests(ctrlcpp_tests)
 ```
 
 **Listing 7-15 — `tests/systems/test_StateSpace.cpp`**
@@ -1639,11 +1639,11 @@ gtest_discover_tests(csl_tests)
 ```cpp
 #include <gtest/gtest.h>
 #include <cmath>
-#include "csl/core/Exceptions.hpp"
-#include "csl/systems/StateSpace.hpp"
+#include "ctrlcpp/core/Exceptions.hpp"
+#include "ctrlcpp/systems/StateSpace.hpp"
 #include "plants.hpp"
-using namespace csl;
-using csl::systems::StateSpace;
+using namespace ctrlcpp;
+using ctrlcpp::systems::StateSpace;
 
 TEST(StateSpace, RejectsNonSquareA) {
     Matrix A = Matrix::Zero(3, 2), B = Matrix::Zero(3, 1), C = Matrix::Zero(1, 2), D = Matrix::Zero(1, 1);
@@ -1666,7 +1666,7 @@ TEST(StateSpace, StabilityClassification) {
 
 The ODE solver tests assert V7.1–V7.3 as error ratios: RK4 error at `Δt = 0.1` below `1e-6` and the ratio of errors at `Δt = 0.1` and `0.05` above 12; Euler ratio `2.0 ± 0.2`.
 
-**Phase 1 review** (`sandbox/phase1_review.md`; one paragraph each): (1) the inputs and outputs of each stage of Figure 7-1; (2) why modifying `StateSpace.cpp` does not recompile `ODESolver.cpp`, and what modifying `StateSpace.hpp` triggers; (3) what `target_link_libraries(csl_tests PRIVATE csl::csl)` propagates besides the library file; (4) `const Matrix&` versus `Matrix` parameters, and why returning `SimResult` by value is efficient; (5) for poles `−1 ± 3j`: `ω_n`, `ζ`, settling time, response sketch, and Euler stability at `Δt = 1 s`; (6) the dc gain of E3 in physical terms, and its value if `b` doubles.
+**Phase 1 review** (`sandbox/phase1_review.md`; one paragraph each): (1) the inputs and outputs of each stage of Figure 7-1; (2) why modifying `StateSpace.cpp` does not recompile `ODESolver.cpp`, and what modifying `StateSpace.hpp` triggers; (3) what `target_link_libraries(ctrlcpp_tests PRIVATE ctrlcpp::ctrlcpp)` propagates besides the library file; (4) `const Matrix&` versus `Matrix` parameters, and why returning `SimResult` by value is efficient; (5) for poles `−1 ± 3j`: `ω_n`, `ζ`, settling time, response sketch, and Euler stability at `Δt = 1 s`; (6) the dc gain of E3 in physical terms, and its value if `b` doubles.
 
 **Verification.**
 
@@ -1705,19 +1705,19 @@ Binary arithmetic operators are declared as free (friend) functions for symmetri
 
 | File | Action |
 |---|---|
-| `include/csl/core/Polynomial.hpp`, `src/core/Polynomial.cpp` | Create (Listing 8-1); `roots()` is implemented on Day 12 |
+| `include/ctrlcpp/core/Polynomial.hpp`, `src/core/Polynomial.cpp` | Create (Listing 8-1); `roots()` is implemented on Day 12 |
 | `tests/core/test_Polynomial.cpp` | Create |
 
 **Listing 8-1 — `Polynomial`**
 
 ```cpp
-// include/csl/core/Polynomial.hpp
+// include/ctrlcpp/core/Polynomial.hpp
 #pragma once
 #include <initializer_list>
 #include <iosfwd>
 #include <vector>
-#include "csl/core/Types.hpp"
-namespace csl {
+#include "ctrlcpp/core/Types.hpp"
+namespace ctrlcpp {
 class Polynomial {
 public:
     Polynomial();                                        // zero polynomial
@@ -1821,7 +1821,7 @@ For `H(s) = N(s)/D(s)`: poles are the roots of `D`, zeros the roots of `N`; `H` 
 | File | Action |
 |---|---|
 | `src/core/Polynomial.cpp` | Implement `roots()` (Listing 8-2) |
-| `include/csl/systems/TransferFunction.hpp`, `src/systems/TransferFunction.cpp` | Create (Listing 8-3); derives from `LTISystem` on Day 13 |
+| `include/ctrlcpp/systems/TransferFunction.hpp`, `src/systems/TransferFunction.cpp` | Create (Listing 8-3); derives from `LTISystem` on Day 13 |
 | `examples/plants.hpp` | Add `thermalTF()`, `massSpringDamperTF()` |
 | `tests/systems/test_TransferFunction.cpp` | Create |
 
@@ -1850,8 +1850,8 @@ std::vector<Complex> Polynomial::roots() const {
 #include <initializer_list>
 #include <iosfwd>
 #include <vector>
-#include "csl/core/Polynomial.hpp"
-namespace csl::systems {
+#include "ctrlcpp/core/Polynomial.hpp"
+namespace ctrlcpp::systems {
 class TransferFunction {
 public:
     TransferFunction(Polynomial num, Polynomial den, Real Ts = 0.0);                       // normalises den to monic
@@ -1917,7 +1917,7 @@ A pure virtual function (`= 0`) makes the class abstract; derived classes mark o
 
 | File | Action |
 |---|---|
-| `include/csl/systems/LTISystem.hpp`, `src/systems/LTISystem.cpp` | Create: Listing 4-2 plus `struct PoleInfo { Complex pole; Real wn, zeta, tau; }` and `std::vector<PoleInfo> damp(const LTISystem&)`; implement `isStable()` here and remove it from `StateSpace` |
+| `include/ctrlcpp/systems/LTISystem.hpp`, `src/systems/LTISystem.cpp` | Create: Listing 4-2 plus `struct PoleInfo { Complex pole; Real wn, zeta, tau; }` and `std::vector<PoleInfo> damp(const LTISystem&)`; implement `isStable()` here and remove it from `StateSpace` |
 | `StateSpace.hpp/.cpp` | Derive from `LTISystem`; add `evaluate` and `zeros` (Listing 8-4); mark overrides |
 | `TransferFunction.hpp/.cpp` | Derive from `LTISystem`; `evaluate` returns a `1×1 ComplexMatrix`; `dcGain` returns a `1×1 Matrix` |
 | `tests/systems/test_LTISystem.cpp` | Create |
@@ -1990,18 +1990,18 @@ so the numerator coefficient of `s^{n−k}` in `H(s) = [C adj(sI−A) B + D det(
 
 | File | Action |
 |---|---|
-| `include/csl/systems/Conversions.hpp`, `src/systems/Conversions.cpp` | Create (Listing 8-5) |
+| `include/ctrlcpp/systems/Conversions.hpp`, `src/systems/Conversions.cpp` | Create (Listing 8-5) |
 | `tests/systems/test_Conversions.cpp` | Create |
 
 **Listing 8-5 — Conversions**
 
 ```cpp
-// include/csl/systems/Conversions.hpp  (Day 14 part)
+// include/ctrlcpp/systems/Conversions.hpp  (Day 14 part)
 #pragma once
-#include "csl/core/Polynomial.hpp"
-#include "csl/systems/StateSpace.hpp"
-#include "csl/systems/TransferFunction.hpp"
-namespace csl::systems {
+#include "ctrlcpp/core/Polynomial.hpp"
+#include "ctrlcpp/systems/StateSpace.hpp"
+#include "ctrlcpp/systems/TransferFunction.hpp"
+namespace ctrlcpp::systems {
 StateSpace       tf2ss(const TransferFunction& H);                            // Eq. (8-4)
 TransferFunction ss2tf(const StateSpace& sys);                                // Eq. (8-5), SISO
 Polynomial       charPoly(const Matrix& A);                                   // det(sI - A)
@@ -2077,9 +2077,9 @@ TransferFunction ss2tf(const StateSpace& sys) {
 
 | File | Action |
 |---|---|
-| `include/csl/plot/Figure.hpp`, `src/plot/Figure.cpp` | Create (Listing 8-6) |
-| `include/csl/plot/Plots.hpp`, `src/plot/Plots.cpp` | Create: `Figure plotOutputs(const SimResult&, title)`, `Figure plotStates(const SimResult&, title)` |
-| `include/csl/simulation/TimeResponse.hpp`, `src/simulation/TimeResponse.cpp` | Create (Listing 8-7) |
+| `include/ctrlcpp/plot/Figure.hpp`, `src/plot/Figure.cpp` | Create (Listing 8-6) |
+| `include/ctrlcpp/plot/Plots.hpp`, `src/plot/Plots.cpp` | Create: `Figure plotOutputs(const SimResult&, title)`, `Figure plotStates(const SimResult&, title)` |
+| `include/ctrlcpp/simulation/TimeResponse.hpp`, `src/simulation/TimeResponse.cpp` | Create (Listing 8-7) |
 | `examples/ex01_first_order_sim.cpp` | Add `plotOutputs(step(E1)).save("step_thermal.html")` |
 | `tests/plot/test_Figure.cpp`, `tests/simulation/test_TimeResponse.cpp` | Create |
 
@@ -2089,8 +2089,8 @@ TransferFunction ss2tf(const StateSpace& sys) {
 #pragma once
 #include <string>
 #include <vector>
-#include "csl/core/Types.hpp"
-namespace csl::plot {
+#include "ctrlcpp/core/Types.hpp"
+namespace ctrlcpp::plot {
 class Figure {
 public:
     explicit Figure(std::string title = "");
@@ -2129,9 +2129,9 @@ private:
 
 ```cpp
 #pragma once
-#include "csl/simulation/SimResult.hpp"
-#include "csl/systems/LTISystem.hpp"
-namespace csl::simulation {
+#include "ctrlcpp/simulation/SimResult.hpp"
+#include "ctrlcpp/systems/LTISystem.hpp"
+namespace ctrlcpp::simulation {
 SimResult step   (const systems::LTISystem& sys, Real tf = -1, Real dt = -1, Index inputIndex = 0);   // tf, dt <= 0: automatic
 SimResult impulse(const systems::LTISystem& sys, Real tf = -1, Real dt = -1, Index inputIndex = 0);
 SimResult lsim   (const systems::LTISystem& sys, const Matrix& u, const Vector& t, const Vector& x0 = Vector());   // u: N x m, ZOH
@@ -2180,7 +2180,7 @@ Specifications define a region of the s-plane for the dominant poles; pole place
 | File | Action |
 |---|---|
 | `TimeResponse.hpp/.cpp` | Add Listing 8-8 |
-| `include/csl/signals/Signals.hpp`, `src/signals/Signals.cpp` | Create: `timeGrid(t0, tf, dt)`, `step(t, amplitude, tStart)`, `ramp(t, slope, tStart)`, `sine(t, amplitude, w, phase)`, `square(t, amplitude, period)`, `chirp(t, f0_hz, f1_hz, amplitude)` (linear sweep); all return `Vector` |
+| `include/ctrlcpp/signals/Signals.hpp`, `src/signals/Signals.cpp` | Create: `timeGrid(t0, tf, dt)`, `step(t, amplitude, tStart)`, `ramp(t, slope, tStart)`, `sine(t, amplitude, w, phase)`, `square(t, amplitude, period)`, `chirp(t, f0_hz, f1_hz, amplitude)` (linear sweep); all return `Vector` |
 | tests | Extend `test_TimeResponse.cpp`; create `tests/signals/test_Signals.cpp` |
 
 **Listing 8-8 — Step specifications**
@@ -2250,8 +2250,8 @@ StepInfo stepInfo(const SimResult& r, Index j, Real thr) {
 
 | File | Action |
 |---|---|
-| `include/csl/core/MathUtils.hpp`, `src/core/MathUtils.cpp` | Create: `dB`, `fromDB`, `rad2deg`, `deg2rad`, `wrapToPi` (inline); `linspace`, `logspace(exp10_a, exp10_b, n)`, `unwrapPhase(Vector&)` |
-| `include/csl/analysis/FrequencyResponse.hpp`, `src/analysis/FrequencyResponse.cpp` | Create (Listing 9-1) |
+| `include/ctrlcpp/core/MathUtils.hpp`, `src/core/MathUtils.cpp` | Create: `dB`, `fromDB`, `rad2deg`, `deg2rad`, `wrapToPi` (inline); `linspace`, `logspace(exp10_a, exp10_b, n)`, `unwrapPhase(Vector&)` |
+| `include/ctrlcpp/analysis/FrequencyResponse.hpp`, `src/analysis/FrequencyResponse.cpp` | Create (Listing 9-1) |
 | `plot/Plots.hpp/.cpp` | Add `plotBode(const std::vector<std::pair<FrequencyResponse, std::string>>&, path)`: two stacked figures with logarithmic frequency axes and guide lines at 0 dB and −180° |
 | tests | `tests/core/test_MathUtils.cpp`, `tests/analysis/test_FrequencyResponse.cpp` |
 
@@ -2259,9 +2259,9 @@ StepInfo stepInfo(const SimResult& r, Index j, Real thr) {
 
 ```cpp
 #pragma once
-#include "csl/core/Types.hpp"
-#include "csl/systems/LTISystem.hpp"
-namespace csl::analysis {
+#include "ctrlcpp/core/Types.hpp"
+#include "ctrlcpp/systems/LTISystem.hpp"
+namespace ctrlcpp::analysis {
 struct FrequencyResponse { Vector w; ComplexVector H; Real Ts = 0.0; };    // Listing 4-3
 struct BodeData { Vector w, magnitude_dB, phase_deg; };                     // phase unwrapped
 
@@ -2382,7 +2382,7 @@ S = 1/(1 + L),   T = L/(1 + L),   CS = C/(1 + L),   PS = P/(1 + L),   S + T = 1 
 
 | File | Action |
 |---|---|
-| `include/csl/systems/Interconnect.hpp`, `src/systems/Interconnect.cpp` | Create (Listing 9-3) |
+| `include/ctrlcpp/systems/Interconnect.hpp`, `src/systems/Interconnect.cpp` | Create (Listing 9-3) |
 | `FrequencyResponse.cpp` | Set `Margins::closedLoopStable = feedback(L).isStable()` |
 | `tests/systems/test_Interconnect.cpp` | Create |
 
@@ -2390,9 +2390,9 @@ S = 1/(1 + L),   T = L/(1 + L),   CS = C/(1 + L),   PS = P/(1 + L),   S + T = 1 
 
 ```cpp
 #pragma once
-#include "csl/systems/StateSpace.hpp"
-#include "csl/systems/TransferFunction.hpp"
-namespace csl::systems {
+#include "ctrlcpp/systems/StateSpace.hpp"
+#include "ctrlcpp/systems/TransferFunction.hpp"
+namespace ctrlcpp::systems {
 TransferFunction series  (const TransferFunction& first, const TransferFunction& second);   // second * first
 TransferFunction parallel(const TransferFunction& a, const TransferFunction& b);
 TransferFunction feedback(const TransferFunction& G, const TransferFunction& H, int sign = -1);
@@ -2452,7 +2452,7 @@ First order: `(1 − sT/2)/(1 + sT/2)`, which has a right-half-plane zero at `2/
 | File | Action |
 |---|---|
 | `TransferFunction.hpp/.cpp` | Implement `pade` (Listing 9-4) |
-| `include/csl/analysis/Stability.hpp`, `src/analysis/Stability.cpp` | Create with `bool isMinimumPhase(const LTISystem&)` (continuous: no poles or zeros with positive real part; discrete: none outside the unit circle); Day 22 completes the file |
+| `include/ctrlcpp/analysis/Stability.hpp`, `src/analysis/Stability.cpp` | Create with `bool isMinimumPhase(const LTISystem&)` (continuous: no poles or zeros with positive real part; discrete: none outside the unit circle); Day 22 completes the file |
 | tests | Extend `test_TransferFunction.cpp`; create `tests/analysis/test_Stability.cpp` |
 
 **Listing 9-4 — Padé approximation**
@@ -2506,7 +2506,7 @@ The root locus is the set of roots of Eq. (9-4) for `K ∈ [0, ∞)`: branches s
 
 | File | Action |
 |---|---|
-| `include/csl/analysis/RootLocus.hpp`, `src/analysis/RootLocus.cpp` | Create (Listing 9-5) |
+| `include/ctrlcpp/analysis/RootLocus.hpp`, `src/analysis/RootLocus.cpp` | Create (Listing 9-5) |
 | `plot/Plots.hpp/.cpp` | Add `plotRootLocus(const RootLocusData&, path)` (branches as lines, poles as `x`, zeros as `o`) and `plotPoleZero(const LTISystem&, path)` |
 | `tests/analysis/test_RootLocus.cpp` | Create |
 
@@ -2515,8 +2515,8 @@ The root locus is the set of roots of Eq. (9-4) for `K ∈ [0, ∞)`: branches s
 ```cpp
 #pragma once
 #include <vector>
-#include "csl/systems/TransferFunction.hpp"
-namespace csl::analysis {
+#include "ctrlcpp/systems/TransferFunction.hpp"
+namespace ctrlcpp::analysis {
 struct RootLocusData {
     Vector gains;
     std::vector<std::vector<Complex>> branches;      // branches[b][k]
@@ -2586,7 +2586,7 @@ The number of sign changes in the first column equals the number of right-half-p
 | File | Action |
 |---|---|
 | `Stability.hpp/.cpp` | Add `Matrix routhArray(const Polynomial&)`, `int routhRHPRootCount(const Polynomial&)`, `bool routhIsStable(const Polynomial&)` |
-| `include/csl/csl.hpp` | Create: includes every public header of Figure 3-1 that exists; extended at the end of each later phase |
+| `include/ctrlcpp/ctrlcpp.hpp` | Create: includes every public header of Figure 3-1 that exists; extended at the end of each later phase |
 | `examples/ex02_representations.cpp` | Create: E2 as `StateSpace` → `ss2tf`; poles, zeros, dc gain, `damp`; `plotStep`, `plotBode`, `plotNyquist` of `10·P`; `plotRootLocus(P)`; Routh-derived stability range of `K`; margins with and without `pade(0.5, 2)` |
 | `sandbox/phase2_3_review.md` | Phase review |
 
@@ -2634,17 +2634,17 @@ C(s) = [(K_p T_f + K_d) s² + (K_p + K_i T_f) s + K_i] / [T_f s² + s]          
 
 | File | Action |
 |---|---|
-| `include/csl/interfaces/Controller.hpp` | Create (Listing 4-4) |
-| `include/csl/control/PID.hpp`, `src/control/PID.cpp` | Create (Listing 10-1); the anti-windup branches are completed on Day 25 |
+| `include/ctrlcpp/interfaces/Controller.hpp` | Create (Listing 4-4) |
+| `include/ctrlcpp/control/PID.hpp`, `src/control/PID.cpp` | Create (Listing 10-1); the anti-windup branches are completed on Day 25 |
 | `tests/control/test_PID.cpp` | Create |
 
 **Listing 10-1 — `PID`**
 
 ```cpp
 #pragma once
-#include "csl/interfaces/Controller.hpp"
-#include "csl/systems/TransferFunction.hpp"
-namespace csl::control {
+#include "ctrlcpp/interfaces/Controller.hpp"
+#include "ctrlcpp/systems/TransferFunction.hpp"
+namespace ctrlcpp::control {
 class PID final : public Controller {
 public:
     struct Config {
@@ -2736,7 +2736,7 @@ Figure 10-1 shows the loop the Simulator reproduces: the controller executes eve
 
 | File | Action |
 |---|---|
-| `include/csl/simulation/Simulator.hpp`, `src/simulation/Simulator.cpp` | Create (Listing 10-2) |
+| `include/ctrlcpp/simulation/Simulator.hpp`, `src/simulation/Simulator.cpp` | Create (Listing 10-2) |
 | `tests/simulation/test_Simulator.cpp` | Create |
 | `examples/ex03_classical_design.cpp` | Begin: E1 with P and PI control |
 
@@ -2746,10 +2746,10 @@ Figure 10-1 shows the loop the Simulator reproduces: the controller executes eve
 #pragma once
 #include <functional>
 #include <memory>
-#include "csl/interfaces/Controller.hpp"
-#include "csl/simulation/SimResult.hpp"
-#include "csl/systems/StateSpace.hpp"
-namespace csl::simulation {
+#include "ctrlcpp/interfaces/Controller.hpp"
+#include "ctrlcpp/simulation/SimResult.hpp"
+#include "ctrlcpp/systems/StateSpace.hpp"
+namespace ctrlcpp::simulation {
 class Simulator {
 public:
     using Signal = std::function<Vector(Real t)>;
@@ -2758,7 +2758,7 @@ public:
     void setInputDisturbance(Signal d)  { disturbance_ = std::move(d); }
     void setOutputDisturbance(Signal d) { outputDisturbance_ = std::move(d); }
     void setPlantSubsteps(int n)        { substeps_ = n; }       // RK4 steps per controller period (default 10)
-    // Day 39 adds: #include "csl/interfaces/Estimator.hpp", std::unique_ptr<estimation::Estimator> estimator_, setEstimator()
+    // Day 39 adds: #include "ctrlcpp/interfaces/Estimator.hpp", std::unique_ptr<estimation::Estimator> estimator_, setEstimator()
     void setMeasurementNoise(Real stdDev, unsigned seed = 1);        // Day 50
     SimResult run(const Vector& x0, Real tf);
 private:
@@ -2892,18 +2892,18 @@ with `K_i = K_p/T_i`, `K_d = K_p T_d`. The ultimate gain `K_u` and period `T_u` 
 
 | File | Action |
 |---|---|
-| `include/csl/control/Relay.hpp` | Create: `Relay(amplitude, hysteresis, Ts)` implementing `Controller` (output `+d` for `e > h`, `−d` for `e < −h`, otherwise previous output) |
-| `include/csl/control/Tuning.hpp`, `src/control/Tuning.cpp` | Create (Listing 10-4) |
+| `include/ctrlcpp/control/Relay.hpp` | Create: `Relay(amplitude, hysteresis, Ts)` implementing `Controller` (output `+d` for `e > h`, `−d` for `e < −h`, otherwise previous output) |
+| `include/ctrlcpp/control/Tuning.hpp`, `src/control/Tuning.cpp` | Create (Listing 10-4) |
 | `tests/control/test_Tuning.cpp` | Create |
 
 **Listing 10-4 — Tuning interface**
 
 ```cpp
 #pragma once
-#include "csl/control/PID.hpp"
-#include "csl/simulation/SimResult.hpp"
-#include "csl/systems/LTISystem.hpp"
-namespace csl::control::tuning {
+#include "ctrlcpp/control/PID.hpp"
+#include "ctrlcpp/simulation/SimResult.hpp"
+#include "ctrlcpp/systems/LTISystem.hpp"
+namespace ctrlcpp::control::tuning {
 struct FOPDT { Real K, L, T; systems::TransferFunction model(int padeOrder = 2) const; };
 FOPDT fitFOPDT(const simulation::SimResult& openLoopStep, Index outputIndex = 0, Real stepAmplitude = 1.0);
 struct UltimatePoint { Real Ku, Tu; };
@@ -2949,14 +2949,14 @@ Design procedure: (1) fix `K` from the error-constant specification; (2) `φ = P
 
 | File | Action |
 |---|---|
-| `include/csl/core/RootFinding.hpp`, `src/core/RootFinding.cpp` | Create: `Real bisection(const std::function<Real(Real)>&, Real a, Real b, Real tol = 1e-10, int maxIter = 200)`; `Real goldenSectionMin(const std::function<Real(Real)>&, Real a, Real b, Real tol = 1e-8)` |
-| `include/csl/control/LeadLag.hpp`, `src/control/LeadLag.cpp` | Create (Listing 10-5) |
+| `include/ctrlcpp/core/RootFinding.hpp`, `src/core/RootFinding.cpp` | Create: `Real bisection(const std::function<Real(Real)>&, Real a, Real b, Real tol = 1e-10, int maxIter = 200)`; `Real goldenSectionMin(const std::function<Real(Real)>&, Real a, Real b, Real tol = 1e-8)` |
+| `include/ctrlcpp/control/LeadLag.hpp`, `src/control/LeadLag.cpp` | Create (Listing 10-5) |
 | tests | `tests/core/test_RootFinding.cpp`, `tests/control/test_LeadLag.cpp` |
 
 **Listing 10-5 — Lead/lag interface and lead design**
 
 ```cpp
-namespace csl::control {
+namespace ctrlcpp::control {
 systems::TransferFunction lead(Real z, Real p, Real K = 1.0);     // K (s+z)/(s+p), z < p
 systems::TransferFunction lag (Real z, Real p, Real K = 1.0);     // z > p
 struct ErrorConstants { Real Kp, Kv, Ka; int systemType; };
@@ -3149,7 +3149,7 @@ For polynomials, Tustin substitution of `p(s) = Σ pᵢ s^{d−i}` with `s = a(z
 | File | Action |
 |---|---|
 | `Conversions.cpp` | Implement `c2d(const TransferFunction&, …)` (Listing 11-2) and `d2c(const TransferFunction&, Tustin)` (inverse substitution) |
-| `include/csl/control/TransferFunctionController.hpp`, `src/control/TransferFunctionController.cpp` | Create: `explicit TransferFunctionController(TransferFunction discreteH)` implementing `Controller` through Eq. (11-2) with input `e = r − y` and two history vectors |
+| `include/ctrlcpp/control/TransferFunctionController.hpp`, `src/control/TransferFunctionController.cpp` | Create: `explicit TransferFunctionController(TransferFunction discreteH)` implementing `Controller` through Eq. (11-2) with input `e = r − y` and two history vectors |
 | tests | Extend `test_Conversions.cpp`; create `tests/control/test_TransferFunctionController.cpp` |
 
 **Listing 11-2 — Tustin and matched pole–zero on transfer functions**
@@ -3233,15 +3233,15 @@ Bin `k` corresponds to `f_k = k f_s/N`; for real `x`, `X[N−k] = conj(X[k])`, s
 
 | File | Action |
 |---|---|
-| `include/csl/dsp/FFT.hpp`, `src/dsp/FFT.cpp` | Create (Listing 11-3) |
+| `include/ctrlcpp/dsp/FFT.hpp`, `src/dsp/FFT.cpp` | Create (Listing 11-3) |
 | `tests/dsp/test_FFT.cpp` | Create, including a timing comparison printed to the test log |
 
 **Listing 11-3 — FFT**
 
 ```cpp
 #pragma once
-#include "csl/core/Types.hpp"
-namespace csl::dsp {
+#include "ctrlcpp/core/Types.hpp"
+namespace ctrlcpp::dsp {
 bool  isPowerOfTwo(Index n);                             // n > 0 && (n & (n - 1)) == 0
 Index nextPowerOfTwo(Index n);
 Index bitReverse(Index i, int bits);
@@ -3311,7 +3311,7 @@ in units²/Hz; its variance does not decrease with `N`. Because `fft` requires a
 
 | File | Action |
 |---|---|
-| `include/csl/dsp/Spectral.hpp`, `src/dsp/Spectral.cpp` | Create (Listing 11-4) |
+| `include/ctrlcpp/dsp/Spectral.hpp`, `src/dsp/Spectral.cpp` | Create (Listing 11-4) |
 | `plot/Plots.hpp/.cpp` | Add `plotSpectrum(const Spectrum&, path)` with logarithmic y-axis |
 | `tests/dsp/test_Spectral.cpp` | Create |
 
@@ -3319,8 +3319,8 @@ in units²/Hz; its variance does not decrease with `N`. Because `fft` requires a
 
 ```cpp
 #pragma once
-#include "csl/core/Types.hpp"
-namespace csl::dsp {
+#include "ctrlcpp/core/Types.hpp"
+namespace ctrlcpp::dsp {
 enum class Window { Rectangular, Hann, Hamming, Blackman };
 Vector window(Window w, Index N);                                        // symmetric definitions
 struct Spectrum { Vector f_hz; Vector P; };                              // one-sided, units^2/Hz
@@ -3382,8 +3382,8 @@ An FIR filter `y[k] = Σ_{i=0}^{M} h_i x[k−i]` has no feedback, is always stab
 
 | File | Action |
 |---|---|
-| `include/csl/interfaces/DigitalFilter.hpp` | Create (Listing 4-5) |
-| `include/csl/dsp/Filters.hpp`, `src/dsp/Filters.cpp` | Create (Listing 11-5) |
+| `include/ctrlcpp/interfaces/DigitalFilter.hpp` | Create (Listing 4-5) |
+| `include/ctrlcpp/dsp/Filters.hpp`, `src/dsp/Filters.cpp` | Create (Listing 11-5) |
 | `tests/dsp/test_DigitalFilter.cpp` | Create |
 
 **Listing 11-5 — Filter structures**
@@ -3391,9 +3391,9 @@ An FIR filter `y[k] = Σ_{i=0}^{M} h_i x[k−i]` has no feedback, is always stab
 ```cpp
 #pragma once
 #include <memory>
-#include "csl/core/Types.hpp"
-#include "csl/interfaces/DigitalFilter.hpp"
-namespace csl::dsp {
+#include "ctrlcpp/core/Types.hpp"
+#include "ctrlcpp/interfaces/DigitalFilter.hpp"
+namespace ctrlcpp::dsp {
 class IIRFilter final : public DigitalFilter {
 public:
     using DigitalFilter::process;                                // re-expose the Vector overload hidden by process(Real)
@@ -3479,7 +3479,7 @@ A function template `template <typename Derived> Real rms(const Eigen::MatrixBas
 
 | File | Action |
 |---|---|
-| `include/csl/dsp/FilterDesign.hpp`, `src/dsp/FilterDesign.cpp` | Create (Listing 11-6) |
+| `include/ctrlcpp/dsp/FilterDesign.hpp`, `src/dsp/FilterDesign.cpp` | Create (Listing 11-6) |
 | `core/MathUtils.hpp` | Add templates `rms`, `clampTo`; `Figure::line` accepts `MatrixBase` expressions |
 | `tests/dsp/test_FilterDesign.cpp` | Create |
 
@@ -3487,9 +3487,9 @@ A function template `template <typename Derived> Real rms(const Eigen::MatrixBas
 
 ```cpp
 #pragma once
-#include "csl/dsp/Filters.hpp"
-#include "csl/dsp/Spectral.hpp"
-namespace csl::dsp {
+#include "ctrlcpp/dsp/Filters.hpp"
+#include "ctrlcpp/dsp/Spectral.hpp"
+namespace ctrlcpp::dsp {
 enum class FilterType { Lowpass, Highpass };
 std::vector<Complex>      butterworthPoles(int order, Real wc_rad_s);                                      // Eq. (11-6)
 systems::TransferFunction butterworthAnalog(int order, Real wc_rad_s, FilterType t = FilterType::Lowpass);
@@ -3589,7 +3589,7 @@ rank W_c = n,   W_c = [B, AB, A²B, …, Aⁿ⁻¹B]                            
 
 | File | Action |
 |---|---|
-| `include/csl/core/Controllability.hpp`, `src/core/Controllability.cpp` | Create (Listing 12-1) |
+| `include/ctrlcpp/core/Controllability.hpp`, `src/core/Controllability.cpp` | Create (Listing 12-1) |
 | `StateSpace.hpp` | Add `isControllable(tol)`, `isObservable(tol)` delegating to the free functions |
 | `tests/core/test_LinearAlgebra.cpp` | Create |
 
@@ -3598,8 +3598,8 @@ rank W_c = n,   W_c = [B, AB, A²B, …, Aⁿ⁻¹B]                            
 ```cpp
 #pragma once
 #include <vector>
-#include "csl/core/Types.hpp"
-namespace csl {
+#include "ctrlcpp/core/Types.hpp"
+namespace ctrlcpp {
 Index  numericalRank(const Matrix& M, Real tol = -1.0);                 // tol < 0: default threshold
 Matrix controllabilityMatrix(const Matrix& A, const Matrix& B);         // Eq. (12-1)
 Matrix observabilityMatrix  (const Matrix& A, const Matrix& C);
@@ -3669,7 +3669,7 @@ Pole selection: dominant pair from the specifications (Day 16), remaining poles 
 | File | Action |
 |---|---|
 | `Polynomial.hpp/.cpp` | Implement `evaluate(const Matrix&)` |
-| `include/csl/control/StateFeedback.hpp`, `src/control/StateFeedback.cpp` | Create (Listing 12-2) |
+| `include/ctrlcpp/control/StateFeedback.hpp`, `src/control/StateFeedback.cpp` | Create (Listing 12-2) |
 | `tests/control/test_StateFeedback.cpp` | Create |
 
 **Listing 12-2 — Pole placement**
@@ -3677,9 +3677,9 @@ Pole selection: dominant pair from the specifications (Day 16), remaining poles 
 ```cpp
 #pragma once
 #include <vector>
-#include "csl/interfaces/Controller.hpp"
-#include "csl/systems/StateSpace.hpp"
-namespace csl::control {
+#include "ctrlcpp/interfaces/Controller.hpp"
+#include "ctrlcpp/systems/StateSpace.hpp"
+namespace ctrlcpp::control {
 Matrix place(const Matrix& A, const Matrix& B, const std::vector<Complex>& poles);   // SISO Ackermann; throws if uncontrollable
 Matrix place(const systems::StateSpace& sys, const std::vector<Complex>& poles);
 Real   feedforwardGain(const systems::StateSpace& sys, const Matrix& K);              // Nbar, SISO
@@ -3763,9 +3763,9 @@ Per-tick order in the Simulator: `update(y)` → `compute(x̂, r)` → `predict(
 
 | File | Action |
 |---|---|
-| `include/csl/interfaces/Estimator.hpp` | Create (Listing 4-5) |
-| `include/csl/estimation/LuenbergerObserver.hpp`, `src/estimation/LuenbergerObserver.cpp` | Create (Listing 12-3) |
-| `Simulator.hpp/.cpp` | Add `#include "csl/interfaces/Estimator.hpp"`, the member `std::unique_ptr<estimation::Estimator> estimator_` and `setEstimator()`; `run()` passes `estimator_->state()` to a `State`-kind controller, requires `estimator_->Ts() == controller_->Ts()`, and keeps the `C = I` fallback of Day 24 |
+| `include/ctrlcpp/interfaces/Estimator.hpp` | Create (Listing 4-5) |
+| `include/ctrlcpp/estimation/LuenbergerObserver.hpp`, `src/estimation/LuenbergerObserver.cpp` | Create (Listing 12-3) |
+| `Simulator.hpp/.cpp` | Add `#include "ctrlcpp/interfaces/Estimator.hpp"`, the member `std::unique_ptr<estimation::Estimator> estimator_` and `setEstimator()`; `run()` passes `estimator_->state()` to a `State`-kind controller, requires `estimator_->Ts() == controller_->Ts()`, and keeps the `C = I` fallback of Day 24 |
 | `StateFeedback.hpp/.cpp` | Add `StateSpace observerBasedCompensator(const StateSpace& plant, const Matrix& K, const Matrix& L)` |
 | tests | `tests/estimation/test_LuenbergerObserver.cpp`; extend `test_Simulator.cpp` |
 
@@ -3831,9 +3831,9 @@ the energy of the impulse response and the output variance under unit white-nois
 
 | File | Action |
 |---|---|
-| `include/csl/core/Lyapunov.hpp`, `src/core/Lyapunov.cpp` | Create: Listing 12-4 and `controllabilityGramian(const StateSpace&)`, `observabilityGramian(const StateSpace&)` (continuous: `lyap`; discrete: `dlyap`) |
+| `include/ctrlcpp/core/Lyapunov.hpp`, `src/core/Lyapunov.cpp` | Create: Listing 12-4 and `controllabilityGramian(const StateSpace&)`, `observabilityGramian(const StateSpace&)` (continuous: `lyap`; discrete: `dlyap`) |
 | `Stability.hpp/.cpp` | Add `bool isLyapunovStable(const Matrix& A)` (solve `lyap(Aᵀ, I)`; test `LLT` success) |
-| `include/csl/analysis/Norms.hpp`, `src/analysis/Norms.cpp` | Create: `Real h2norm(const StateSpace&)` by Eq. (12-5), including `tr(DᵀD)` for discrete systems; throws for unstable systems and for continuous systems with `D ≠ 0` (infinite norm) |
+| `include/ctrlcpp/analysis/Norms.hpp`, `src/analysis/Norms.cpp` | Create: `Real h2norm(const StateSpace&)` by Eq. (12-5), including `tr(DᵀD)` for discrete systems; throws for unstable systems and for continuous systems with `D ≠ 0` (infinite norm) |
 | tests | Extend `test_LinearAlgebra.cpp`; create `tests/analysis/test_Norms.cpp` |
 
 **Listing 12-4 — Kronecker product and Lyapunov solvers**
@@ -3993,8 +3993,8 @@ has eigenvalues symmetric about the imaginary axis; stacking the `n` eigenvector
 
 | File | Action |
 |---|---|
-| `include/csl/core/Riccati.hpp`, `src/core/Riccati.cpp` | Create: `Matrix solveARE(const Matrix& A, const Matrix& S, const Matrix& Q)` (Listing 13-1) and `solveCARE(A, B, Q, R)` forming `S` |
-| `include/csl/control/LQR.hpp`, `src/control/LQR.cpp` | Create: `struct LQRResult { Matrix K, P; std::vector<Complex> closedLoopPoles; }`; `lqr(A, B, Q, R)` (checks `isStabilizable(A, B)`, `Q ⪰ 0`, `R ≻ 0` before calling `solveCARE`); `lqr(const StateSpace&, Q, R)` (continuous only); `Real lqrCost(const Matrix& P, const Vector& x0)` |
+| `include/ctrlcpp/core/Riccati.hpp`, `src/core/Riccati.cpp` | Create: `Matrix solveARE(const Matrix& A, const Matrix& S, const Matrix& Q)` (Listing 13-1) and `solveCARE(A, B, Q, R)` forming `S` |
+| `include/ctrlcpp/control/LQR.hpp`, `src/control/LQR.cpp` | Create: `struct LQRResult { Matrix K, P; std::vector<Complex> closedLoopPoles; }`; `lqr(A, B, Q, R)` (checks `isStabilizable(A, B)`, `Q ⪰ 0`, `R ≻ 0` before calling `solveCARE`); `lqr(const StateSpace&, Q, R)` (continuous only); `Real lqrCost(const Matrix& P, const Vector& x0)` |
 | tests | Extend `test_LinearAlgebra.cpp`; create `tests/control/test_LQR.cpp` |
 
 **Listing 13-1 — ARE solver (Hamiltonian eigenvector method)**
@@ -4162,8 +4162,8 @@ If the linearization is strictly stable (unstable), the equilibrium of the nonli
 
 | File | Action |
 |---|---|
-| `include/csl/systems/NonlinearSystem.hpp`, `src/systems/NonlinearSystem.cpp` | Create (Listing 13-3) |
-| `include/csl/core/Jacobian.hpp`, `src/core/Jacobian.cpp` | Create: `Matrix numericalJacobian(const std::function<Vector(const Vector&)>&, const Vector& x)`; `Vector newtonSolve(f, x0, tol)` |
+| `include/ctrlcpp/systems/NonlinearSystem.hpp`, `src/systems/NonlinearSystem.cpp` | Create (Listing 13-3) |
+| `include/ctrlcpp/core/Jacobian.hpp`, `src/core/Jacobian.cpp` | Create: `Matrix numericalJacobian(const std::function<Vector(const Vector&)>&, const Vector& x)`; `Vector newtonSolve(f, x0, tol)` |
 | `Simulator.hpp/.cpp` | Store the plant as `{Dynamics f, Output h, n, m, p}`; add a constructor taking `NonlinearSystem`; `StateSpace` converts via `NonlinearSystem::fromLinear`; Day 24 tests unchanged |
 | `examples/plants.hpp` | Add `cartPole()` implementing Eq. (5-5) with `h(x) = [p, θ]` |
 | tests | `tests/systems/test_NonlinearSystem.cpp`; create `tests/core/test_Jacobian.cpp` |
@@ -4173,8 +4173,8 @@ If the linearization is strictly stable (unstable), the equilibrium of the nonli
 ```cpp
 #pragma once
 #include <functional>
-#include "csl/systems/StateSpace.hpp"
-namespace csl::systems {
+#include "ctrlcpp/systems/StateSpace.hpp"
+namespace ctrlcpp::systems {
 class NonlinearSystem {
 public:
     using Dynamics = std::function<Vector(Real t, const Vector& x, const Vector& u)>;
@@ -4226,7 +4226,7 @@ LQR is the special case with quadratic `V` (Eq. 13-3 is Eq. 13-7 specialised). W
 
 | File | Action |
 |---|---|
-| `include/csl/control/DynamicProgramming.hpp`, `src/control/DynamicProgramming.cpp` | Create: `struct GridDP { std::vector<Vector> axes; Vector actions; std::function<Vector(const Vector&, Real)> step; std::function<Real(const Vector&, Real)> stageCost; Real discount = 1.0; }`; `struct DPResult { std::vector<Real> V, policy; int iterations; Real lastChange; }`; `valueIteration(const GridDP&, Real tol = 1e-6, int maxIter = 2000)` with bilinear interpolation of `V(f(x, u))`; `interpolate(...)` |
+| `include/ctrlcpp/control/DynamicProgramming.hpp`, `src/control/DynamicProgramming.cpp` | Create: `struct GridDP { std::vector<Vector> axes; Vector actions; std::function<Vector(const Vector&, Real)> step; std::function<Real(const Vector&, Real)> stageCost; Real discount = 1.0; }`; `struct DPResult { std::vector<Real> V, policy; int iterations; Real lastChange; }`; `valueIteration(const GridDP&, Real tol = 1e-6, int maxIter = 2000)` with bilinear interpolation of `V(f(x, u))`; `interpolate(...)` |
 | `tests/control/test_DynamicProgramming.cpp` | Create |
 
 **Verification.**
@@ -4278,16 +4278,16 @@ Continuous white noise of intensity `Q_c` sampled with a zero-order hold has `Q_
 | File | Action |
 |---|---|
 | `signals/Signals.hpp/.cpp` | Add Listing 14-1 |
-| `include/csl/core/Statistics.hpp`, `src/core/Statistics.cpp` | Create: `sampleCovariance(const Matrix& rows)`, `discretizeNoise(A, Qc, Ts)` |
+| `include/ctrlcpp/core/Statistics.hpp`, `src/core/Statistics.cpp` | Create: `sampleCovariance(const Matrix& rows)`, `discretizeNoise(A, Qc, Ts)` |
 | `Simulator.hpp/.cpp` | Implement `setMeasurementNoise`; add `setProcessNoise(const Matrix& Qd, unsigned seed)` — `Qd` is a per-sample covariance added once per controller period (Table 4-4) |
 | `SimResult.hpp` | Add `Real sampleRate() const` (throws for non-uniform `t`) and `Vector channel(Index j) const` |
-| `include/csl/simulation/MonteCarlo.hpp`, `src/simulation/MonteCarlo.cpp` | Create: `struct MonteCarloResult { std::vector<SimResult> runs; Vector t; Matrix yMean, yStd, uMean, uStd; }`; `monteCarlo(const std::function<Simulator(unsigned seed)>& makeSimulator, const Vector& x0, Real tf, int runs, unsigned baseSeed = 1000)` |
+| `include/ctrlcpp/simulation/MonteCarlo.hpp`, `src/simulation/MonteCarlo.cpp` | Create: `struct MonteCarloResult { std::vector<SimResult> runs; Vector t; Matrix yMean, yStd, uMean, uStd; }`; `monteCarlo(const std::function<Simulator(unsigned seed)>& makeSimulator, const Vector& x0, Real tf, int runs, unsigned baseSeed = 1000)` |
 | tests | Extend `test_Signals.cpp`; create `tests/simulation/test_MonteCarlo.cpp` |
 
 **Listing 14-1 — Noise and PRBS generators**
 
 ```cpp
-namespace csl::signals {
+namespace ctrlcpp::signals {
 class WhiteNoise {
 public:
     explicit WhiteNoise(Real stdDev = 1.0, unsigned seed = 1);
@@ -4358,7 +4358,7 @@ The gain minimises `tr P` (equivalently, gives the conditional mean under Gaussi
 
 | File | Action |
 |---|---|
-| `include/csl/estimation/KalmanFilter.hpp`, `src/estimation/KalmanFilter.cpp` | Create (Listing 14-2) |
+| `include/ctrlcpp/estimation/KalmanFilter.hpp`, `src/estimation/KalmanFilter.cpp` | Create (Listing 14-2) |
 | `tests/estimation/test_KalmanFilter.cpp` | Create |
 
 **Listing 14-2 — `KalmanFilter`**
@@ -4432,7 +4432,7 @@ which is Eq. (13-4) with `(A, B, Q, R) ↦ (Aᵀ, Cᵀ, Q, R)`. The duality tabl
 | File | Action |
 |---|---|
 | `KalmanFilter.hpp/.cpp` | Add `struct SteadyStateKF { Matrix Pminus, Pplus, K; std::vector<Complex> poles; }`; `steadyStateKalman(const StateSpace& sysd, Q, R)` |
-| `include/csl/control/LQG.hpp`, `src/control/LQG.cpp` | Create: `class LQGController final : public Controller` with `Config { Matrix Qx, Ru, Qw, Rv; Vector x0; Matrix P0; bool steadyState = true; Matrix Nbar; }`; `compute` performs `update(y)`, `u = −Kx̂ + N̄r`, `predict(u)`; `StateSpace lqgCompensator(const StateSpace& sysd, const Matrix& K, const Matrix& L)` |
+| `include/ctrlcpp/control/LQG.hpp`, `src/control/LQG.cpp` | Create: `class LQGController final : public Controller` with `Config { Matrix Qx, Ru, Qw, Rv; Vector x0; Matrix P0; bool steadyState = true; Matrix Nbar; }`; `compute` performs `update(y)`, `u = −Kx̂ + N̄r`, `predict(u)`; `StateSpace lqgCompensator(const StateSpace& sysd, const Matrix& K, const Matrix& L)` |
 | tests | Extend `test_KalmanFilter.cpp`; create `tests/control/test_LQG.cpp` |
 
 **Verification.**
@@ -4462,7 +4462,7 @@ which is Eq. (13-4) with `(A, B, Q, R) ↦ (Aᵀ, Cᵀ, Q, R)`. The duality tabl
 
 | File | Action |
 |---|---|
-| `include/csl/estimation/ExtendedKalmanFilter.hpp`, `src/estimation/ExtendedKalmanFilter.cpp` | Create (Listing 14-3) |
+| `include/ctrlcpp/estimation/ExtendedKalmanFilter.hpp`, `src/estimation/ExtendedKalmanFilter.cpp` | Create (Listing 14-3) |
 | `examples/plants.hpp` | Add `pendulum(l = 1, c = 0.1)`: `θ̈ = −(g/l) sin θ − cθ̇ + u`, output `sin θ` |
 | `tests/estimation/test_ExtendedKalmanFilter.cpp` | Create |
 
@@ -4523,7 +4523,7 @@ W_m⁰ = λ/(n + λ),   W_c⁰ = W_m⁰ + (1 − α² + β),   W_m^i = W_c^i = 1
 | File | Action |
 |---|---|
 | `Statistics.hpp/.cpp` | Add `struct UnscentedTransformResult { Vector mean; Matrix cov, crossCov, sigmaOut; }`; `unscentedTransform(g, mean, cov, alpha = 1e-3, beta = 2, kappa = 0)` |
-| `include/csl/estimation/UnscentedKalmanFilter.hpp`, `src/estimation/UnscentedKalmanFilter.cpp` | Create with a `Config` sharing the `f`, `h`, `Q`, `R`, `x0`, `P0`, `innovationFix` fields of Listing 14-3 plus `alpha`, `beta`, `kappa` |
+| `include/ctrlcpp/estimation/UnscentedKalmanFilter.hpp`, `src/estimation/UnscentedKalmanFilter.cpp` | Create with a `Config` sharing the `f`, `h`, `Q`, `R`, `x0`, `P0`, `innovationFix` fields of Listing 14-3 plus `alpha`, `beta`, `kappa` |
 | `tests/estimation/test_UnscentedKalmanFilter.cpp` | Create |
 
 If the Cholesky factorisation of `P` fails, `εI` is added and the condition is reported through `NumericalError` after a bounded number of attempts.
@@ -4577,16 +4577,16 @@ With regressor `φ[k] = [−y[k−1], …, −y[k−n_a], u[k−n_k], …, u[k�
 
 | File | Action |
 |---|---|
-| `include/csl/sysid/ARX.hpp`, `src/sysid/ARX.cpp` | Create (Listing 15-1) |
-| `include/csl/sysid/Validation.hpp`, `src/sysid/Validation.cpp` | Create: `fitPercent(y, yhat)`, `splitData(u, y, fraction)` |
+| `include/ctrlcpp/sysid/ARX.hpp`, `src/sysid/ARX.cpp` | Create (Listing 15-1) |
+| `include/ctrlcpp/sysid/Validation.hpp`, `src/sysid/Validation.cpp` | Create: `fitPercent(y, yhat)`, `splitData(u, y, fraction)` |
 | `tests/sysid/test_ARX.cpp` | Create |
 
 **Listing 15-1 — ARX**
 
 ```cpp
 #pragma once
-#include "csl/systems/TransferFunction.hpp"
-namespace csl::sysid {
+#include "ctrlcpp/systems/TransferFunction.hpp"
+namespace ctrlcpp::sysid {
 struct ARXModel {
     Vector a, b; Index na, nb, nk; Real Ts;
     Real noiseVariance, conditionNumber;
@@ -4646,7 +4646,7 @@ with forgetting factor `λ ∈ (0, 1]`: `λ = 1` reproduces batch least squares;
 
 | File | Action |
 |---|---|
-| `include/csl/sysid/RLS.hpp`, `src/sysid/RLS.cpp` | Create: `class RLS { RLS(Index nParams, Real lambda = 1, Real P0 = 1e4); void update(Real y, const Vector& phi); const Vector& theta() const; const Matrix& covariance() const; Real lastResidual() const; void reset(Real P0); }`; `Matrix rlsARX(y, u, na, nb, nk, lambda, P0)` returning the parameter history |
+| `include/ctrlcpp/sysid/RLS.hpp`, `src/sysid/RLS.cpp` | Create: `class RLS { RLS(Index nParams, Real lambda = 1, Real P0 = 1e4); void update(Real y, const Vector& phi); const Vector& theta() const; const Matrix& covariance() const; Real lastResidual() const; void reset(Real P0); }`; `Matrix rlsARX(y, u, na, nb, nk, lambda, P0)` returning the parameter history |
 | `KalmanFilter.hpp` | Allow a time-varying `C` (setter) for the equivalence test |
 | `tests/sysid/test_RLS.cpp` | Create |
 
@@ -4684,7 +4684,7 @@ using the Welch cross-spectra of Day 32; `Ĥ` is trustworthy where `γ² > 0.8�
 | File | Action |
 |---|---|
 | `dsp/Spectral.hpp/.cpp` | Add `struct ETFEResult { analysis::FrequencyResponse H; Vector coherence; Vector f_hz; }`; `etfe(u, y, fs_hz, nperseg = 1024, overlap = 0.5, Window = Hann)` (Listing 15-2) |
-| `include/csl/sysid/FrequencyDomainID.hpp`, `src/sysid/FrequencyDomainID.cpp` | Create: `struct RationalFitOptions { Index numOrder, denOrder; int skIterations = 10; Real minCoherence = 0; }`; `fitRational(const FrequencyResponse& H, const RationalFitOptions&, const Vector& weights = Vector())`; `fitFOPDTfromFRF(const FrequencyResponse&)` (gain from `|Ĥ(0)|`, time constant from the −3 dB point, delay from the high-frequency phase slope) |
+| `include/ctrlcpp/sysid/FrequencyDomainID.hpp`, `src/sysid/FrequencyDomainID.cpp` | Create: `struct RationalFitOptions { Index numOrder, denOrder; int skIterations = 10; Real minCoherence = 0; }`; `fitRational(const FrequencyResponse& H, const RationalFitOptions&, const Vector& weights = Vector())`; `fitFOPDTfromFRF(const FrequencyResponse&)` (gain from `|Ĥ(0)|`, time constant from the −3 dB point, delay from the high-frequency phase slope) |
 | tests | `tests/sysid/test_FrequencyDomainID.cpp`; extend `test_Spectral.cpp` |
 
 **Listing 15-2 — ETFE**
@@ -4736,7 +4736,7 @@ is a balanced minimal realization; the rank of `H₀` (the number of significant
 
 | File | Action |
 |---|---|
-| `include/csl/sysid/Subspace.hpp`, `src/sysid/Subspace.cpp` | Create (Listing 15-3) |
+| `include/ctrlcpp/sysid/Subspace.hpp`, `src/sysid/Subspace.cpp` | Create (Listing 15-3) |
 | `Validation.hpp/.cpp` | Add `autocorrelation(x, maxLag)`, `crossCorrelation(x, y, maxLag)`, `struct ValidationReport { Real fitPercent; Vector residualAutocorr, residualInputXcorr; Real band; bool residualsWhite, residualsIndependent; }`, `validate(const LTISystem& model, u, y, maxLag = 25)` |
 | `examples/ex08_sysid.cpp` | Create: ARX, ERA and rational fit on the same E3 data; comparison table of poles and dc gains; Bode overlay with the truth |
 | tests | `tests/sysid/test_Subspace.cpp`, `tests/sysid/test_Validation.cpp` |
@@ -4744,7 +4744,7 @@ is a balanced minimal realization; the rank of `H₀` (the number of significant
 **Listing 15-3 — ERA**
 
 ```cpp
-namespace csl::sysid {
+namespace ctrlcpp::sysid {
 std::vector<Matrix> markovParametersFromImpulse(const Matrix& h, Index p, Index m);
 std::vector<Matrix> markovParametersByCorrelation(const Vector& u, const Vector& y, Index K);   // white u, SISO
 struct ERAResult { systems::StateSpace sys; Vector singularValues; Index order; };
@@ -4815,7 +4815,7 @@ These are the specification language of H∞ design (Day 66). The limitations of
 
 | File | Action |
 |---|---|
-| `include/csl/analysis/Robustness.hpp`, `src/analysis/Robustness.cpp` | Create: `relativeErrorEnvelope(nominal, family, w)`; `delayUncertaintyWeight(tauMax, gain = 2.2)`; `struct RobustnessReport { Real robustStabilityPeak, nominalPerformancePeak, robustPerformancePeak, worstFrequency; bool robustlyStable, nominallyPerforming, robustlyPerforming; }`; `robustness(L, Wm, Ws, w)` (grid; exact on Day 61) |
+| `include/ctrlcpp/analysis/Robustness.hpp`, `src/analysis/Robustness.cpp` | Create: `relativeErrorEnvelope(nominal, family, w)`; `delayUncertaintyWeight(tauMax, gain = 2.2)`; `struct RobustnessReport { Real robustStabilityPeak, nominalPerformancePeak, robustPerformancePeak, worstFrequency; bool robustlyStable, nominallyPerforming, robustlyPerforming; }`; `robustness(L, Wm, Ws, w)` (grid; exact on Day 61) |
 | `tests/analysis/test_Robustness.cpp` | Create |
 
 **Verification.**
@@ -4917,7 +4917,7 @@ With equalities only, `[[H, A_eqᵀ], [A_eq, 0]] [x; μ] = [−f; b_eq]`. With i
 
 | File | Action |
 |---|---|
-| `include/csl/core/QP.hpp`, `src/core/QP.cpp` | Create: Listing 16-2 and `solveEqualityQP(H, f, Aeq, beq)`, `kktResidual(H, f, A, b, result)` |
+| `include/ctrlcpp/core/QP.hpp`, `src/core/QP.cpp` | Create: Listing 16-2 and `solveEqualityQP(H, f, Aeq, beq)`, `kktResidual(H, f, A, b, result)` |
 | `tests/core/test_QP.cpp` | Create |
 
 **Listing 16-2 — Hildreth's method**
@@ -5017,7 +5017,7 @@ with `Q̄ = diag(Q, …, Q, Q_N)`, `R̄ = diag(R, …, R)`. Input bounds, rate l
 
 | File | Action |
 |---|---|
-| `include/csl/control/MPC.hpp`, `src/control/MPC.cpp` | Create (Listing 16-3) |
+| `include/ctrlcpp/control/MPC.hpp`, `src/control/MPC.cpp` | Create (Listing 16-3) |
 | `tests/control/test_MPC.cpp` | Create |
 
 **Listing 16-3 — `MPC` interface**
@@ -5113,7 +5113,7 @@ through the nonlinear dynamics with the largest `α ∈ {1, ½, ¼, …}` that r
 
 | File | Action |
 |---|---|
-| `include/csl/control/iLQR.hpp`, `src/control/iLQR.cpp` | Create: `struct iLQRProblem { std::function<Vector(const Vector&, const Vector&)> f; std::function<Real(const Vector&, const Vector&)> l; std::function<Real(const Vector&)> lN; Index n, m, N; Real Ts; }`; `struct iLQRResult { std::vector<Vector> x, u; std::vector<Matrix> K; std::vector<Real> costHistory; bool converged; int iterations; }`; `ilqr(problem, x0, uInit, maxIter = 100, tol = 1e-6, muInit = 1e-6)` |
+| `include/ctrlcpp/control/iLQR.hpp`, `src/control/iLQR.cpp` | Create: `struct iLQRProblem { std::function<Vector(const Vector&, const Vector&)> f; std::function<Real(const Vector&, const Vector&)> l; std::function<Real(const Vector&)> lN; Index n, m, N; Real Ts; }`; `struct iLQRResult { std::vector<Vector> x, u; std::vector<Matrix> K; std::vector<Real> costHistory; bool converged; int iterations; }`; `ilqr(problem, x0, uInit, maxIter = 100, tol = 1e-6, muInit = 1e-6)` |
 | `tests/control/test_iLQR.cpp` | Create |
 
 **Verification.**
@@ -5165,7 +5165,7 @@ As `γ → ∞` the two equations become the LQR and Kalman Riccati equations an
 
 | File | Action |
 |---|---|
-| `include/csl/control/HInfinity.hpp`, `src/control/HInfinity.cpp` | Create: `struct GeneralizedPlant { StateSpace P; Index nw, nu, nz, ny; }`; `disturbanceRejectionPlant(G, Ws, Wt, rho = 1.0)` (the formulation above); `checkRegularity(const GeneralizedPlant&)` throwing `InvalidArgument` naming the first violated assumption; `struct HInfResult { StateSpace K; Real gamma; Matrix Xinf, Yinf; bool ok; std::string message; }`; `hinfsynFixedGamma(P, gamma)` (Eq. 16-8, or `ok = false` naming the failed condition); `hinfsyn(P, gammaLo = 0, gammaHi = 1e3, tol = 1e-3)` (bisection); `closedLoop(P, K)` returning `T_zw` |
+| `include/ctrlcpp/control/HInfinity.hpp`, `src/control/HInfinity.cpp` | Create: `struct GeneralizedPlant { StateSpace P; Index nw, nu, nz, ny; }`; `disturbanceRejectionPlant(G, Ws, Wt, rho = 1.0)` (the formulation above); `checkRegularity(const GeneralizedPlant&)` throwing `InvalidArgument` naming the first violated assumption; `struct HInfResult { StateSpace K; Real gamma; Matrix Xinf, Yinf; bool ok; std::string message; }`; `hinfsynFixedGamma(P, gamma)` (Eq. 16-8, or `ok = false` naming the failed condition); `hinfsyn(P, gammaLo = 0, gammaHi = 1e3, tol = 1e-3)` (bisection); `closedLoop(P, K)` returning `T_zw` |
 | `tests/control/test_HInfinity.cpp` | Create |
 
 **Verification.** Plant `G = 1/(s − 1)` (strictly proper); weights `W_s = 0.5(s/2 + 1)/(s + 0.01)`, `W_t = 0.1(s + 1)/(s/10 + 1)`, `ρ = 1`; `checkRegularity` passes without scaling.
@@ -5198,19 +5198,19 @@ As `γ → ∞` the two equations become the LQR and Kalman Riccati equations an
 
 | File | Action |
 |---|---|
-| `CMakeLists.txt` | Add `include(CMakePackageConfigHelpers)`; `install(TARGETS csl eigen EXPORT cslTargets ARCHIVE DESTINATION lib)` — the `eigen` interface target that `csl` links `PUBLIC` must be in the same export set, otherwise `install(EXPORT)` fails with "target csl requires target eigen that is not in the export set"; `install(DIRECTORY include/ DESTINATION include)`; `install(DIRECTORY ${eigen_SOURCE_DIR}/Eigen ${eigen_SOURCE_DIR}/unsupported DESTINATION include)` so that the `INSTALL_INTERFACE` include directory of Listing 7-9 resolves (vendored, self-contained package); `install(EXPORT cslTargets NAMESPACE csl:: DESTINATION lib/cmake/csl)`; `configure_package_config_file` and `write_basic_package_version_file` for `cslConfig.cmake`, `cslConfigVersion.cmake`. The alternative strategy — not vendoring, and writing `find_dependency(Eigen3 3.4)` in `cslConfig.cmake.in` with `csl` linking `Eigen3::Eigen` from `find_package` — is documented in the config file as a commented option |
-| `cmake/cslConfig.cmake.in` | Create: includes `cslTargets.cmake` |
-| `tests/consumer/CMakeLists.txt`, `tests/consumer/main.cpp` | Create: `find_package(csl 2.0 REQUIRED)`; a ten-line program calling `step(E1)` |
+| `CMakeLists.txt` | Add `include(CMakePackageConfigHelpers)`; `install(TARGETS ctrlcpp eigen EXPORT ctrlcppTargets ARCHIVE DESTINATION lib)` — the `eigen` interface target that `ctrlcpp` links `PUBLIC` must be in the same export set, otherwise `install(EXPORT)` fails with "target ctrlcpp requires target eigen that is not in the export set"; `install(DIRECTORY include/ DESTINATION include)`; `install(DIRECTORY ${eigen_SOURCE_DIR}/Eigen ${eigen_SOURCE_DIR}/unsupported DESTINATION include)` so that the `INSTALL_INTERFACE` include directory of Listing 7-9 resolves (vendored, self-contained package); `install(EXPORT ctrlcppTargets NAMESPACE ctrlcpp:: DESTINATION lib/cmake/ctrlcpp)`; `configure_package_config_file` and `write_basic_package_version_file` for `ctrlcppConfig.cmake`, `ctrlcppConfigVersion.cmake`. The alternative strategy — not vendoring, and writing `find_dependency(Eigen3 3.4)` in `ctrlcppConfig.cmake.in` with `ctrlcpp` linking `Eigen3::Eigen` from `find_package` — is documented in the config file as a commented option |
+| `cmake/ctrlcppConfig.cmake.in` | Create: includes `ctrlcppTargets.cmake` |
+| `tests/consumer/CMakeLists.txt`, `tests/consumer/main.cpp` | Create: `find_package(ctrlcpp 2.0 REQUIRED)`; a ten-line program calling `step(E1)` |
 | `scripts/test_install.ps1`, `scripts/test_install.sh` | Create: configure, build, install to a temporary prefix, build and run the consumer |
 
 **Verification.**
 
 | ID | Check | Expected |
 |---|---|---|
-| V67.1 | `cmake --install build --prefix <tmp>` | `lib/csl.lib`, `include/csl/…`, `include/Eigen/…`, `lib/cmake/csl/cslConfig.cmake` present |
+| V67.1 | `cmake --install build --prefix <tmp>` | `lib/ctrlcpp.lib`, `include/ctrlcpp/…`, `include/Eigen/…`, `lib/cmake/ctrlcpp/ctrlcppConfig.cmake` present |
 | V67.2 | Consumer project builds and runs against the installed tree with no reference to the source tree | — |
-| V67.3 | `find_package(csl 3.0)` | fails with a version message |
-| V67.4 | The consumer links `csl::csl` only and compiles code that includes `<Eigen/Dense>` through `csl/core/Types.hpp` | compiles (the Eigen include directory is propagated by the exported target) |
+| V67.3 | `find_package(ctrlcpp 3.0)` | fails with a version message |
+| V67.4 | The consumer links `ctrlcpp::ctrlcpp` only and compiles code that includes `<Eigen/Dense>` through `ctrlcpp/core/Types.hpp` | compiles (the Eigen include directory is propagated by the exported target) |
 
 **Exit criteria.**
 - [ ] V67.1–V67.3
@@ -5252,7 +5252,7 @@ As `γ → ∞` the two equations become the LQR and Kalman Riccati equations an
 |---|---|
 | `.github/workflows/ci.yml` | Jobs: `windows-latest` (MSVC, Ninja, Debug and Release, `ctest`); `ubuntu-latest` (GCC, `-Wall -Wextra -Werror`, Debug with `-fsanitize=address,undefined`, Release, `ctest`); install/consumer script; `build/_deps` cached |
 | `.clang-format` | Based on the LLVM style, 4-space indentation, 110 columns; applied once to the tree; a CI step checks formatting |
-| `CMakeLists.txt` | Warnings as errors on `csl` and `csl_tests` (`/WX`, `-Werror`) |
+| `CMakeLists.txt` | Warnings as errors on `ctrlcpp` and `ctrlcpp_tests` (`/WX`, `-Werror`) |
 | `CHANGELOG.md` | Entry for 2.0.0 |
 | optional | `clang-tidy` with `bugprone-*`, `performance-*`, `modernize-use-override` |
 
@@ -5304,7 +5304,7 @@ As `γ → ∞` the two equations become the LQR and Kalman Riccati equations an
 
 ### 18.1 Principles
 
-- T1 Every day adds tests; the suite never shrinks. The completed library has approximately 350–450 test cases in about 45 files mirroring `include/csl`.
+- T1 Every day adds tests; the suite never shrinks. The completed library has approximately 350–450 test cases in about 45 files mirroring `include/ctrlcpp`.
 - T2 Tests target the hand-written layer only. The correctness of Eigen, the standard library and Google Test is not tested.
 - T3 Every test has a known answer: a closed form, a reference value (Table 5-3), a cross-representation identity, an invariant (`S + T = 1`, Parseval, KKT residual, Riccati residual), a convergence law (RK4 error ratio), or an independent computation (bisection versus grid; ERA versus ARX).
 - T4 Cross-checks between days are written deliberately: the stability limit `K = 6` of `1/(s(s+1)(s+2))` from margins (Day 18), root locus (Day 21) and Routh (Day 22); LQR cost versus simulated integral (Day 44); Kalman covariance versus DARE (Day 51); MPC versus `dlqr` (Day 63); iLQR versus finite-horizon LQR (Day 65); H∞ versus LQG (Day 66).
